@@ -1,0 +1,2 @@
+def poll():
+    print('Hi!')
