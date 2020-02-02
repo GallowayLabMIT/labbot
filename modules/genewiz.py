@@ -148,7 +148,7 @@ def _extract_oligo_results(order, session):
         os.remove(filename)
 
     # Built output string:
-    url = '<https://clims4.genewiz.com/SangerSequencing/ViewResults?OrderID=={}|Sequencing results>'.format(order['id'])
+    url = '<https://clims4.genewiz.com/SangerSequencing/ViewResults?OrderID={}|Sequencing results>'.format(order['id'])
     order_str = 'Order: {}'.format(order_name)
     table = ''
     for tup in zip(names, lengths, qualities):
