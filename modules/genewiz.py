@@ -44,7 +44,7 @@ def poll(credentials, slack_client):
             if len(pending_json) == 0:
                 pending_orders = {}
             else:
-                pending_orders = set(json.load(pending))
+                pending_orders = set(json.loads(pending_json))
     
     # Find orders that used to be pending:
     updated_sequences = [seq for seq in sanger_sequencing if
