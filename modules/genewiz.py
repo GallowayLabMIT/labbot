@@ -23,7 +23,6 @@ def poll(credentials, slack_client):
     """
     # Login to Genewiz
     session = requests.Session()
-    print('Sending login')
     r = session.post('https://clims4.genewiz.com/RegisterAccount/Login',
             data={'LoginName': credentials['username'],
                 'Password' : credentials['password'], 'RememberMe': 'true'})
@@ -52,13 +51,18 @@ def poll(credentials, slack_client):
 
     for sequence in updated_sequences:
 
-        (text, zip_filename) = _extract_oligo_results(sequence, session)
+        (text_out, zip_filename) = _extract_oligo_results(sequence, session)
         try:
+            slack_response = slack_client.chat_postMessage(
+                channel='#sequencing',
+                text='Sequencing results:',
+                blocks=json.dumps([{'type':'section', 'text':
+                    {'type': 'mrkdwn', 'text': text_out}}]))
+
             slack_response = slack_client.files_upload(
                     channels='#sequencing',
                     file=zip_filename,
-                    filename=os.path.basename(zip_filename) + '.zip',
-                    initial_comment=text)
+                    filename=os.path.basename(zip_filename))
             assert slack_response["ok"]
         finally:
             os.remove(zip_filename)
@@ -100,8 +104,12 @@ def _extract_oligo_results(order, session):
     # Extract each sequencing reaction information
     ab1_files = []
     tempdir = tempfile.mkdtemp()
+    names = []
+    qualities = []
+    lengths = []
     for reaction in reaction_list:
-        print(reaction)
+        quality = reaction['QS']
+        length = reaction['CRL']
         order_id = order['id']
         sequencer = reaction['Sequencer']
         folder = reaction['ActualPlateFolder']
@@ -112,6 +120,11 @@ def _extract_oligo_results(order, session):
                     'folder': folder,
                     'fileName': file_name[:-4] + labwell + '.ab1',
                     'labwell': labwell}
+
+        names.append(reaction['SamplePrimerName'])
+        qualities.append(quality)
+        lengths.append(length)
+
         ab1_file = session.get('https://clims4.genewiz.com/SangerSequencing/DownloadResult',
                 data=query_string)
         # Assert that we actually got an AB1 files
@@ -128,13 +141,20 @@ def _extract_oligo_results(order, session):
     zip_filename = os.path.join(tempdir, order_name + '.zip')
     with ZipFile(zip_filename, 'w') as outzip:
         for ab1 in ab1_files:
-            outzip.write(ab1)
+            outzip.write(ab1, arcname = os.path.basename(ab1))
 
     # Cleanup
     for filename in ab1_files:
         os.remove(filename)
 
-    return ('Hello world!', zip_filename)
+    # Built output string:
+    url = '<https://clims4.genewiz.com/SangerSequencing/ViewResults?OrderID=={}|Sequencing results>'.format(order['id'])
+    order_str = 'Order: {}'.format(order_name)
+    table = ''
+    for tup in zip(names, lengths, qualities):
+        table += '\n\t{}: Length {}, quality {}'.format(*tup)
+    
+    return (order_str + '\n' + url + table, zip_filename)
 
 def _extract_orders(html, order_type=None):
     """
