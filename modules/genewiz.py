@@ -101,6 +101,7 @@ def _extract_oligo_results(order, session):
     ab1_files = []
     tempdir = tempfile.mkdtemp()
     for reaction in reaction_list:
+        print(reaction)
         order_id = order['id']
         sequencer = reaction['Sequencer']
         folder = reaction['ActualPlateFolder']
