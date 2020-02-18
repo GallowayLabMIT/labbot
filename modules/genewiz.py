@@ -51,7 +51,7 @@ def poll(credentials, slack_client):
 
     for sequence in updated_sequences:
 
-        (text_out, zip_filename) = _extract_oligo_results(sequence, session)
+        (text_out, zip_filename) = _extract_seq_results(sequence, session)
         try:
             slack_response = slack_client.chat_postMessage(
                 channel='#sequencing',
@@ -75,7 +75,7 @@ def poll(credentials, slack_client):
         json.dump(new_pending_orders, pending)
 
 
-def _extract_oligo_results(order, session):
+def _extract_seq_results(order, session):
     """
     Given an order (full metadata), saves the ABI trace files into a temporary zip file and
     returns some information about the order.
