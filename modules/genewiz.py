@@ -138,6 +138,8 @@ def _extract_seq_results(order, session):
 
     # Zip all files together
     order_name = reaction_list[0]['OrderName']
+    if order_name is None:
+        order_name = 'no_order_name'
     zip_filename = os.path.join(tempdir, order_name + '.zip')
     with ZipFile(zip_filename, 'w') as outzip:
         for ab1 in ab1_files:
