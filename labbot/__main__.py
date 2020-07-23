@@ -19,7 +19,7 @@ try:
         time.sleep(60 * 5)
 except Exception as e:
     slack_client.chat_postMessage(
-            channel='#sequencing',
+            channel='#labbot_debug',
             text='Script died:',
             blocks=json.dumps([{'type':'section', 'text':
                 {'type': 'mrkdwn', 'text':
