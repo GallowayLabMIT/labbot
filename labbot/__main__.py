@@ -7,11 +7,12 @@ from modules import genewiz, slackapi
 with open('labbot.secret') as json_secrets:
     secrets = json.load(json_secrets)
 
-# Launch API
-slackapi.start(secrets['slackapi']['port'])
 
 # Create slack credentials
 slack_client = slack.WebClient(token=secrets['slack']['api_token'])
+
+# Launch API
+slackapi.start(slack_client, secrets['slackapi']['port'])
 
 try:
     while True:
