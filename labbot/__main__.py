@@ -2,10 +2,13 @@ import slack # Slack connection
 import json # For reading the secrets file
 import time
 import traceback
-from modules import genewiz
+from modules import genewiz, slackapi
 
 with open('labbot.secret') as json_secrets:
     secrets = json.load(json_secrets)
+
+# Launch API
+slackapi.start(secrets['slackapi']['port'])
 
 # Create slack credentials
 slack_client = slack.WebClient(token=secrets['slack']['api_token'])

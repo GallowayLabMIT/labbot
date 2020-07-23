@@ -8,5 +8,5 @@ setup(
         author_email='meson800@gmail.com',
         license='MIT',
         packages=['labbot'],
-        install_requires=['beautifulsoup4', 'slackclient', 'requests'],
+        install_requires=['beautifulsoup4', 'slackclient', 'requests', 'fastapi', 'uvicorn'],
         zip_safe=True)
