@@ -112,8 +112,10 @@ main_model = {
                     "type": "plain_text",
                     "text": "View your submissions"
                 },
-                "value": "view_submissions_button"
-            }
+                "value": "view_submissions_button",
+                "action_id": "view_submissions"
+            },
+            "block_id": "submissions_summary"
         },
         {
             "type": "divider"
@@ -228,7 +230,14 @@ async def root(request: Request):
             view = main_model)
     elif payload_raw['type'] == 'block_actions':
         payload = BlockActionPayload.parse_raw(form_data['payload'])
-        print(payload.actions)
+
+        if len(payload.actions) > 0:
+            action = payload.actions[0]
+            # Load the detailed submissions model if required
+            if action.action_id == 'view_submissions':
+                sclient.views_push(
+                    trigger_id = payload.trigger_id,
+                    view = submissions_model)
     elif payload_raw['type'] == 'view_submission':
         # We received a submission on the covid hour tracking modal.
         payload = ViewSubmissionPayload.parse_raw(form_data['payload'])

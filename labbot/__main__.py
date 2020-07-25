@@ -2,7 +2,7 @@ import slack # Slack connection
 import json # For reading the secrets file
 import time
 import traceback
-from modules import genewiz, slackapi
+from modules import genewiz, covidapi
 
 with open('labbot.secret') as json_secrets:
     secrets = json.load(json_secrets)
@@ -11,8 +11,8 @@ with open('labbot.secret') as json_secrets:
 # Create slack credentials
 slack_client = slack.WebClient(token=secrets['slack']['api_token'])
 
-# Launch API
-slackapi.start(slack_client, secrets['slackapi']['port'])
+# Launch COVID API
+covidapi.start(slack_client, secrets['slackapi']['port'])
 
 try:
     while True:
