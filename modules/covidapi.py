@@ -232,16 +232,30 @@ async def root(request: Request):
     if payload_raw['type'] == 'shortcut':
         payload = ShortcutPayload.parse_raw(form_data['payload'])
 
-        # Update the main model
-        now_dt = datetime.now(ETC)
-        main_model["blocks"][4]["element"]["initial_date"] = now_dt.strftime('%Y-%m-%d')
+        if payload.callback_id == 'track_hours':
+            # Update the main model
+            now_dt = datetime.now(ETC)
+            main_model["blocks"][4]["element"]["initial_date"] = now_dt.strftime('%Y-%m-%d')
 
-        hour_summary = summarize_hour_results(hour_results, current_week, payload.user.username)
-        main_model["blocks"][2]["text"]["text"] = "This week you have used *{:.1f}* out of *{:.1f}* hours.\nAll lab members have used *{:.1f}* out of *{:.1f}* hours.".format(
-                hour_summary[0], hours_per_week, hour_summary[1], hours_per_week * lab_members)
-        sclient.views_open(
-            trigger_id = payload.trigger_id,
-            view = main_model)
+            hour_summary = summarize_hour_results(hour_results, current_week, payload.user.username)
+            main_model["blocks"][2]["text"]["text"] = "This week you have used *{:.1f}* out of *{:.1f}* hours.\nAll lab members have used *{:.1f}* out of *{:.1f}* hours.".format(
+                    hour_summary[0], hours_per_week, hour_summary[1], hours_per_week * lab_members)
+            sclient.views_open(
+                trigger_id = payload.trigger_id,
+                view = main_model)
+            return {}
+        elif payload.callback_id == 'get_hours_csv':
+            # Send a message to the requester
+            with open('covid_hours.csv') as covidfile:
+                csv_text = covidfile.read()
+            sclient.chat_postMessage(
+                channel=payload.user.id,
+                text='Hours CSV:',
+                blocks=json.dumps([{'type':'section', 'text':
+                    {'type': 'mrkdwn', 'text': '```{}```'.format(csv_text)}}]))
+            return {}
+
+
     elif payload_raw['type'] == 'block_actions':
         payload = BlockActionPayload.parse_raw(form_data['payload'])
 
@@ -254,7 +268,7 @@ async def root(request: Request):
                         current_week.strftime("%B %d"),
                         (current_week + timedelta(days=6)).strftime("%B %d"),
                         hour_summary[0])
-                submissions_model["blocks"][2]["text"]["text"] = '\n'.join([
+                submissions_model["blocks"][2]["text"]["text"] = ' \n' + '\n'.join([
                         "*{}*: {} to {}".format(
                             val[0].strftime("%B %d"),
                             val[1].strftime("%k:%M"),
@@ -325,6 +339,7 @@ def parse_csv(filename):
     with open(filename) as covid_file:
         reader = csv.DictReader(covid_file)
         for row in reader:
+            week = datetime.strptime(row['week'], '%Y-%m-%d')
             day = datetime.strptime(row['day'], '%Y-%m-%d')
             arrival_time = datetime.strptime(row['arrival_time'], '%H:%M')
             departure_time = datetime.strptime(row['departure_time'], '%H:%M')
@@ -332,14 +347,13 @@ def parse_csv(filename):
             if row['user'] not in results:
                 results[row['user']] = {}
 
-            week_date = day + timedelta(days=-day.weekday())
-            week_date_str = week_date.strftime('%Y-%m-%d')
-            if week_date_str not in results[row['user']]:
-                results[row['user']][week_date_str] = {'total_time': 0.0, 'instances': []}
+            week_str = week.strftime('%Y-%m-%d')
+            if week_str not in results[row['user']]:
+                results[row['user']][week_str] = {'total_time': 0.0, 'instances': []}
 
-            results[row['user']][week_date_str]['instances'].append(
+            results[row['user']][week_str]['instances'].append(
                     [day, arrival_time, departure_time])
-            results[row['user']][week_date_str]['total_time'] += (departure_time - arrival_time).total_seconds()
+            results[row['user']][week_str]['total_time'] += (departure_time - arrival_time).total_seconds()
     return results
 
 def summarize_hour_results(results, week, username):
@@ -365,12 +379,15 @@ def summarize_hour_results(results, week, username):
 def check_covid_file_existence(filename):
     if not pathlib.Path(filename).exists():
         with open(filename, 'w') as covid_file:
-            covid_file.write('user,day,arrival_time,departure_time\n')
+            covid_file.write('user,week,day,arrival_time,departure_time\n')
 
 def add_row(filename, user, day, arrival, departure):
+    day_dt = datetime.strptime(day, '%Y-%m-%d')
+    week = day_dt + timedelta(days=-day_dt.weekday())
     with open(filename, 'a') as covid_file:
-        covid_file.write('{},{},{},{}\n'.format(
+        covid_file.write('{},{},{},{},{}\n'.format(
             user,
+            week.strftime('%Y-%m-%d'),
             day,
             arrival,
             departure))
