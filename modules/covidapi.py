@@ -321,11 +321,12 @@ async def root(request: Request):
 
         duration = datetime.strptime(departure, '%H:%M') - datetime.strptime(arrival, '%H:%M')
         print(duration)
-        sclient.chat_postEphemeral(
-            channel='#covidscheduling',
-            text='{:.1f} hours submitted successfully for {}'.format(
+        sclient.chat_postMessage(
+            channel=payload.user.id,
+            text='{:.1f} hours submitted successfully for {}, from {} to {}'.format(
                 duration.total_seconds() / 3600.0,
-                datetime.strptime(day, '%Y-%m-%d').strftime('%B %d')),
+                datetime.strptime(day, '%Y-%m-%d').strftime('%B %d'),
+                arrival, departure),
             user=payload.user.id)
 
         return {
