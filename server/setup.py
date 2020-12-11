@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='LabBot',
     description='Helper Slack bot for the Galloway lab',
-        url='https://github.com/meson800/labbot',
+        url='https://github.com/GallowayLabMIT/labbot',
         author='Christopher Johnstone',
         author_email='meson800@gmail.com',
         license='MIT',
@@ -11,5 +11,6 @@ setup(
         install_requires=['beautifulsoup4', 'slackclient',
                           'requests', 'fastapi', 'uvicorn',
                           'python-multipart', 'pytz',
+                          'slack_bolt',
                           'google-api-python-client', 'google-auth-httplib2', 'google-auth-oauthlib'],
         zip_safe=True)
