@@ -319,6 +319,8 @@ async def root(request: Request):
                 arrival,
                 departure)
 
+        print(departure)
+        print(arrival)
         duration = datetime.strptime(departure, '%H:%M') - datetime.strptime(arrival, '%H:%M')
         print(duration)
         sclient.chat_postMessage(
