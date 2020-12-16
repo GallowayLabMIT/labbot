@@ -1,5 +1,10 @@
 import slack # Slack connection
+import slack_bolt
 import json # For reading the secrets file
+import contextlib
+import time
+import threading
+import uvicorn
 import time
 import traceback
 from modules import genewiz, covidapi
@@ -7,6 +12,22 @@ from modules import genewiz, covidapi
 import googleapiclient.discovery
 import google_auth_oauthlib.flow
 import google.auth.transport.requests
+
+class WebServer(uvicorn.Server):
+    def install_signal_handlers(self):
+        pass # Use default signal handlers
+
+    @contextlib.contextmanager
+    def run_in_thread(self):
+        thread = threading.Thread(target=self.run)
+        thread.start()
+        try:
+            while not self.started:
+                time.sleep(1e-3)
+            yield
+        finally:
+            self.should_exit = True
+            thread.join()
 
 with open('labbot.secret') as json_secrets:
     secrets = json.load(json_secrets)
@@ -18,6 +39,10 @@ with open('labbot.secret') as json_secrets:
 
 
 # Create slack credentials
+bolt_client = slack_bolt.async_app.AsyncApp(
+        signing_secret=secrets['slack']['signing_secret'],
+        token=secrets['slack']['api_token']
+)
 slack_client = slack.WebClient(token=secrets['slack']['api_token'])
 
 # Launch COVID API
