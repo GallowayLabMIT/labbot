@@ -5,13 +5,15 @@ This allows FastAPI and python-bolt style decorators to be used almost
 directly, even though each module will not be creating its own instances
 of these runners.
 """
-from slack_bolt.async_app import AsyncApp
+import functools
+
+import slack_bolt
 import fastapi
 
 class SlackPassthrough:
     """
     Helper class that creates helper functions for every
-    non-protected method that slack_bolt.AsyncApp exports, saving
+    non-protected method that slack_bolt.App exports, saving
     the decorator arguments for calling later.
     """
     
@@ -21,11 +23,11 @@ class SlackPassthrough:
         """
         self.accumulator = []
 
-        slack_methods = [f for f in dir(AsyncApp)
-                            if callable(getattr(AsyncApp, f))
-                            and not func.startswith("__")]
+        slack_methods = [f for f in dir(slack_bolt.App)
+                            if callable(getattr(slack_bolt.App, f))
+                            and not f.startswith("__")]
         for method in slack_methods:
-            setattr(self, method) = functools.partialmethod(_defer_slack, method)
+            setattr(self, method, functools.partial(self._defer_slack, method))
     
     def _defer_slack(self, method_name, *args, **kwargs):
         """
@@ -37,7 +39,7 @@ class SlackPassthrough:
         ----------
         method_name : str
             The name of the method decorator to later be called as:
-            AsyncApp.method_name(*args. **kwargs)(func)
+            slack_bolt.App.method_name(*args. **kwargs)(func)
         *args
             Variable length argument list
         **kwargs
@@ -69,9 +71,9 @@ class FastAPIPassthrough:
 
         fastapi_methods = [f for f in dir(fastapi.FastAPI)
                             if callable(getattr(fastapi.FastAPI, f))
-                            and not func.startswith("__")]
+                            and not f.startswith("__")]
         for method in fastapi_methods:
-            setattr(self, method) = functools.partialmethod(_defer_fastapi, method)
+            setattr(self, method, functools.partial(self._defer_fastapi, method))
     
     def _defer_fastapi(self, method_name, *args, **kwargs):
         """
@@ -111,7 +113,7 @@ class ModuleLoader:
     FastAPI documentation.
 
     To integrate with the rest of LabBot, you should have a standalone
-    function "return_loader", which returns the ModuleLoader created.
+    function "register_module", which returns the ModuleLoader created.
     Surrounding code uses this to initalize all of the functions.
     """
 
@@ -143,7 +145,7 @@ class ModuleLoader:
         Parameters
         ----------
         slack_bolt_instance
-            Instance of slack_bolt.async_app.AsyncApp
+            Instance of slack_bolt.App
         fastapi_instance
             Instance of fastapi.FastAPI
         """
