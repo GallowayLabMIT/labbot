@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import importlib
 import json # For reading the secrets file
 import threading
@@ -79,6 +80,7 @@ def labbot_debug_error(error, body, logger):
 
 
 # Load modules
+timer_tasks = []
 for module_name in secrets['global']['modules']:
     try:
         module = importlib.import_module('modules.{}'.format(module_name))
@@ -86,13 +88,17 @@ for module_name in secrets['global']['modules']:
             config = secrets[module_name]
         else:
             config = {}
+        config['slack_client'] = bolt_client.client
+        config['logger'] = functools.partial(slack_log, header=module_name)
         module_hooks = module.register_module(config)
         module_hooks.register(bolt_client, api)
+        timer_tasks.extend(module_hooks.timer_accumulator)
     except Exception as e:
-        log('Could not load module `{}`\nError:\n```{}```\nStacktrace:\n```{}```'.format(
+        slack_log('Could not load module `{}`\nError:\n```{}```\nStacktrace:\n```{}```'.format(
             module_name,
             e,
             '\n'.join(traceback.TracebackException.from_exception(e).format())), 'module_loader')
+
 
 # Start the server
 
@@ -103,8 +109,55 @@ class WebServer(uvicorn.Server):
     def run_threaded(self):
         self.config.setup_event_loop()
         loop = asyncio.new_event_loop()
+        loop.create_task(self.timer_coroutine(timer_tasks))
         loop.run_until_complete(self.serve())
 
+    async def timer_coroutine(self, tasks):
+        """
+        Runs a series of tasks that should be scheduled on a timer.
+
+        Parameters
+        ----------
+        tasks
+            A list of functions with the signature def f(slack_client) that
+            returns either None, if this task should not be repeated, or a
+            number (integer or float) of how many seconds should elapse before
+            the next check.
+        """
+        # Spawn a new client for thread safety
+        threaded_client = slack_bolt.App(
+                signing_secret=secrets['slack']['signing_secret'],
+                token=secrets['slack']['api_token']
+        )
+        loop = asyncio.get_event_loop()
+
+        last_time = time.time()
+        # Init the tuple list with the starting time
+        tasks_to_complete = [(f, last_time) for f in tasks]
+
+        while not self.should_exit and len(tasks_to_complete) > 0:
+            # Wait one second
+            await asyncio.sleep(1)
+            last_time = time.time()
+
+            rescheduled_tasks = []
+            for func, trigger_time in tasks_to_complete:
+                # If a function hasn't reached the trigger time, just reschedule
+                if trigger_time > last_time:
+                    rescheduled_tasks.append((func, trigger_time))
+                else:
+                    # Otherwise, run the task, handing it the Slack client if needed.
+                    try:
+                        delay = await loop.run_in_executor(None, func, threaded_client.client)
+                        if delay is not None:
+                            rescheduled_tasks.append((func, last_time + delay))
+                    except Exception as e:
+                        slack_log('Timer error:\nError:\n```{}```\nStacktrace:\n```{}```'.format(
+                            e,
+                            '\n'.join(traceback.TracebackException.from_exception(e).format())), 'timer_runner')
+                                    # If delay is not none, the task wants to be rescheduled
+            tasks_to_complete = rescheduled_tasks
+        # THis will exit when the rest of the webserver is asked to close.
 
     @contextlib.contextmanager
     def run_in_thread(self):

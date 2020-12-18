@@ -7,8 +7,26 @@ import tempfile # For creating a temp zipping directory
 from zipfile import ZipFile # for creating the zip file
 import os       # for file operations
 
+from labbot.module_loader import ModuleLoader
 
-def poll(credentials, slack_client):
+module_config = {}
+
+loader = ModuleLoader()
+
+def register_module(config):
+    # Override defaults if present 
+    module_config.update(config)
+
+    if 'username' not in module_config:
+        raise RuntimeError("Genewiz username not specified in the config file!")
+    if 'password' not in module_config:
+        raise RuntimeError("Genewize password not specified in the config file!")
+
+    # Return
+    return loader
+
+@loader.timer
+def poll(slack_client):
     """
     Given Genewiz login credentials, checks for newly completed
     primers and sequencing orders, and sends Slack messages to
@@ -24,10 +42,9 @@ def poll(credentials, slack_client):
     # Login to Genewiz
     session = requests.Session()
     r = session.post('https://clims4.genewiz.com/RegisterAccount/Login',
-            data={'LoginName': credentials['username'],
-                'Password' : credentials['password'], 'RememberMe': 'true'})
+            data={'LoginName': module_config['username'],
+                'Password' : module_config['password'], 'RememberMe': 'true'})
     main_screen = session.get('https://clims4.genewiz.com/CustomerHome/Index') 
-    #soup = BeautifulSoup(main_screen.text, 'html.parser')
 
     # Pull out the sequencing requests and oligos
     sanger_sequencing = _extract_orders(main_screen.text, 'Sanger Sequencing')
@@ -73,6 +90,9 @@ def poll(credentials, slack_client):
             if order['orderStatus'] != 'Completed']
     with open('pending_genewiz.json', 'w') as pending:
         json.dump(new_pending_orders, pending)
+
+    # Reschedule in 5 minutes
+    return 5 * 60
 
 
 def _extract_seq_results(order, session):
