@@ -47,6 +47,12 @@ def get_branch(name='HEAD'):
     Returns a summary of the current HEAD git state
     """
     branch_name = subprocess.run(['git', 'rev-parse', '--abbrev-ref', name], capture_output=True).stdout.decode('utf-8').strip('\n')
+
+    if branch_name == 'HEAD':
+        all_names = subprocess.run(['git', 'show', '-s', '--pretty=%D', name], capture_output = True)
+        match = re.search(r"origin_readonly/([^,\s]+)", all_names.decode('utf-8'))
+        if match is not None:
+            branch_name = match.group(1)
     commit_name = subprocess.run(['git', 'rev-parse', '--short', name], capture_output=True).stdout.decode('utf-8').strip('\n')
     return '{}({})'.format(branch_name, commit_name)
 
