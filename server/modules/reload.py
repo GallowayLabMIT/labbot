@@ -2,6 +2,7 @@ from copy import deepcopy
 from datetime import datetime
 import subprocess
 import pytz
+import re
 
 from labbot.module_loader import ModuleLoader
 
