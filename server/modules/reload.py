@@ -45,9 +45,12 @@ def dev_tools_home_tab(user):
 
 @loader.timer
 def print_startup(client):
+    commit_msg = subprocess.run(['git', 'log', '-1', '--pretty=%B'], capture_output=True)
     client.chat_postMessage(
             channel='#labbot_debug',
-            text=':wave: Labbot starting on {}'.format(get_branch()))
+            text=':wave: Labbot starting on {}\n```{}```'.format(
+                get_branch(),
+                commit_msg.stdout.decode('utf-8')))
     return None
 
 def get_branch(name='HEAD'):
@@ -58,7 +61,7 @@ def get_branch(name='HEAD'):
 
     if branch_name == 'HEAD':
         all_names = subprocess.run(['git', 'show', '-s', '--pretty=%D', name], capture_output = True)
-        match = re.search(r"origin_readonly/([^,\s]+)", all_names.stdout.decode('utf-8'))
+        match = re.search(module_config['remote_name'] + r"/([^,\s]+)", all_names.stdout.decode('utf-8'))
         if match is not None:
             branch_name = match.group(1)
     commit_name = subprocess.run(['git', 'rev-parse', '--short', name], capture_output=True).stdout.decode('utf-8').strip('\n')
@@ -96,7 +99,7 @@ def validate_commit(ack, body, client):
         view = deepcopy(dev_tools_validated)
         view['blocks'][0]['text']['text'] = 'Updating `{}` -> `{}`'.format(
                 get_branch(),
-                get_branch(branch_name))
+                get_branch('{}/{}'.format(module_config['remote_name'],branch_name))
         view['private_metadata'] = branch_name
     else:
         view = deepcopy(dev_tools_view)
