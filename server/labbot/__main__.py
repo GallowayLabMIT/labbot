@@ -16,13 +16,6 @@ import fastapi
 import contextlib
 import uvicorn
 
-from modules import covidapi
-#from modules import genewiz, covidapi
-
-#import googleapiclient.discovery
-#import google_auth_oauthlib.flow
-#import google.auth.transport.requests
-
 ETC = pytz.timezone('America/New_York')
 
 # Create shutdown variables
@@ -282,6 +275,10 @@ server = WebServer(webserver_config)
 with server.run_in_thread():
     should_shutdown.acquire()
     should_shutdown.wait()
+
+bolt_client.client.chat_postMessage(
+        channel='#labbot_debug',
+        text='LabBot shutting down. Bye!')
 
 if restart_flag:
     os.execv(sys.executable, ['python'] + sys.argv)
