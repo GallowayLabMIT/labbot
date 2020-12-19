@@ -42,6 +42,13 @@ def dev_tools_home_tab(user):
         }
 	},]
 
+@loader.timer
+def print_startup(client):
+    client.chat_postMessage(
+            channel='#labbot_debug',
+            text=':wave: Labbot starting on {}'.format(get_branch()))
+    return None
+
 def get_branch(name='HEAD'):
     """
     Returns a summary of the current HEAD git state

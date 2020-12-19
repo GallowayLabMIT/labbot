@@ -181,7 +181,7 @@ class WebServer(uvicorn.Server):
                         for user in home_tab_users:
                             accum_blocks = []
                             for f in home_tab_functions:
-                                accum_blocks.extend(f(user))
+                                accum_blocks.append(f(user))
 
 
                             blocks = [{
@@ -191,8 +191,9 @@ class WebServer(uvicorn.Server):
                                     "text": "Good {}!".format(time_summary),
                                 }}]
                             for mod_blocks in accum_blocks:
-                                blocks.append({ "type": "divider" })
-                                blocks.append(mod_blocks)
+                                if len(mod_blocks) > 0:
+                                    blocks.append({ "type": "divider" })
+                                    blocks.extend(mod_blocks)
 
                             built_view = {
                                     "type": "home",
