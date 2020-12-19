@@ -1,10 +1,14 @@
 import asyncio
+from datetime import datetime
 import functools
 import importlib
 import json # For reading the secrets file
+import os
+import sys
 import threading
 import time
 import traceback
+import pytz
 
 import slack_bolt# Slack file
 from slack_bolt.adapter.fastapi import SlackRequestHandler
@@ -18,6 +22,19 @@ from modules import covidapi
 #import googleapiclient.discovery
 #import google_auth_oauthlib.flow
 #import google.auth.transport.requests
+
+ETC = pytz.timezone('America/New_York')
+
+# Create shutdown variables
+restart_flag = False
+should_shutdown = threading.Condition()
+
+def shutdown_func(restart=False):
+    global restart_flag
+    should_shutdown.acquire()
+    restart_flag = restart
+    should_shutdown.notify()
+    should_shutdown.release()
 
 with open('labbot.secret') as json_secrets:
     secrets = json.load(json_secrets)
@@ -72,6 +89,29 @@ def labbot_debug_error(error, body, logger):
     except Exception as e:
         print(e)
 
+home_tab_users = set()
+home_tab_functions = []
+home_tab_lock = threading.Lock()
+should_update_home_tab = False
+
+@bolt_client.event("app_home_opened")
+def register_home_tab_open(client, event):
+    home_tab_users.add(event['user'])
+    update_home_tab()
+
+def update_home_tab():
+    """
+    Schedules an update to the home tab, to occur in the next asyncio
+    update
+    """
+    global should_update_home_tab
+    home_tab_lock.acquire()
+    should_update_home_tab = True
+    print('Set update flag')
+    home_tab_lock.release()
+
+
+
 # Start by loading Google credentials
 #GAPI_SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 #google_flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_config(secrets['gapi'], GAPI_SCOPES)
@@ -90,8 +130,10 @@ for module_name in secrets['global']['modules']:
             config = {}
         config['slack_client'] = bolt_client.client
         config['logger'] = functools.partial(slack_log, header=module_name)
+        config['shutdown_func'] = shutdown_func
         module_hooks = module.register_module(config)
         module_hooks.register(bolt_client, api)
+        home_tab_functions.extend(module_hooks.home_accumulator)
         timer_tasks.extend(module_hooks.timer_accumulator)
     except Exception as e:
         slack_log('Could not load module `{}`\nError:\n```{}```\nStacktrace:\n```{}```'.format(
@@ -110,7 +152,64 @@ class WebServer(uvicorn.Server):
         self.config.setup_event_loop()
         loop = asyncio.new_event_loop()
         loop.create_task(self.timer_coroutine(timer_tasks))
+        loop.create_task(self.home_tab_coroutine())
         loop.run_until_complete(self.serve())
+
+    async def home_tab_coroutine(self):
+        """
+        Checks if the home tab should be updated, then sends updated
+        views.
+        """
+        global should_update_home_tab
+
+        while not self.should_exit:
+            await asyncio.sleep(0.1)
+            if home_tab_lock.acquire(blocking=False):
+                try:
+                    hour = datetime.now(ETC).hour
+                    if hour < 5:
+                        time_summary = 'night'
+                    elif hour < 12:
+                        time_summary = 'morning'
+                    elif hour < 17:
+                        time_summary = 'afternoon'
+                    else:
+                        time_summary = 'evening'
+
+                    if should_update_home_tab:
+                        should_update_home_tab = False
+                        for user in home_tab_users:
+                            accum_blocks = []
+                            for f in home_tab_functions:
+                                accum_blocks.extend(f(user))
+
+
+                            blocks = [{
+                                "type": "header",
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "Good {}!".format(time_summary),
+                                }}]
+                            for mod_blocks in accum_blocks:
+                                blocks.append({ "type": "divider" })
+                                blocks.append(mod_blocks)
+
+                            built_view = {
+                                    "type": "home",
+                                    "blocks": blocks
+                                    }
+                            print(built_view)
+                            bolt_client.client.views_publish(
+                                    user_id=user,
+                                    view=built_view)
+                except Exception as e:
+                    slack_log('Timer error:\nError:\n```{}```\nStacktrace:\n```{}```'.format(
+                        e,
+                        '\n'.join(traceback.TracebackException.from_exception(e).format())), 'timer_runner')
+                                # If delay is not none, the task wants to be rescheduled
+
+                finally:
+                    home_tab_lock.release()
 
     async def timer_coroutine(self, tasks):
         """
@@ -180,8 +279,11 @@ webserver_config = uvicorn.Config(
 server = WebServer(webserver_config)
 
 with server.run_in_thread():
-    while True:
-        pass
+    should_shutdown.acquire()
+    should_shutdown.wait()
+
+if restart_flag:
+    os.execv(sys.executable, ['python'] + sys.argv)
 
 
 

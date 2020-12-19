@@ -121,6 +121,21 @@ class ModuleLoader:
         self.slack = SlackPassthrough()
         self.fastapi = FastAPIPassthrough()
         self.timer_accumulator = []
+        self.home_accumulator = []
+
+    def home_tab(self, func):
+        """
+        Decorator that records functions used to return
+        home tab content. This function should NOT block.
+
+        Parameters
+        ----------
+        func : function
+            This function is expected to return a list of dictionaries,
+            where each dictionary is a slack Block.
+        """
+        self.home_accumulator.append(func)
+        return func
 
     def timer(self, func):
         """
