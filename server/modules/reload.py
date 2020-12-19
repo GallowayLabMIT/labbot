@@ -99,7 +99,7 @@ def validate_commit(ack, body, client):
         view = deepcopy(dev_tools_validated)
         view['blocks'][0]['text']['text'] = 'Updating `{}` -> `{}`'.format(
                 get_branch(),
-                get_branch('{}/{}'.format(module_config['remote_name'],branch_name))
+                get_branch('{}/{}'.format(module_config['remote_name'],branch_name)))
         view['private_metadata'] = branch_name
     else:
         view = deepcopy(dev_tools_view)
