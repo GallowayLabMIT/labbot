@@ -58,7 +58,7 @@ def get_branch(name='HEAD'):
 
     if branch_name == 'HEAD':
         all_names = subprocess.run(['git', 'show', '-s', '--pretty=%D', name], capture_output = True)
-        match = re.search(r"origin_readonly/([^,\s]+)", all_names.decode('utf-8'))
+        match = re.search(r"origin_readonly/([^,\s]+)", all_names.stdout.decode('utf-8'))
         if match is not None:
             branch_name = match.group(1)
     commit_name = subprocess.run(['git', 'rev-parse', '--short', name], capture_output=True).stdout.decode('utf-8').strip('\n')
