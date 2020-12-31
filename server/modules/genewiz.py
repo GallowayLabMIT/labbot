@@ -47,8 +47,12 @@ def poll(slack_client):
     main_screen = session.get('https://clims4.genewiz.com/CustomerHome/Index') 
 
     # Pull out the sequencing requests and oligos
-    sanger_sequencing = _extract_orders(main_screen.text, 'Sanger Sequencing')
-    oligos = _extract_orders(main_screen.text, 'Oligo Synthesis')
+    try:
+        sanger_sequencing = _extract_orders(main_screen.text, 'Sanger Sequencing')
+        oligos = _extract_orders(main_screen.text, 'Oligo Synthesis')
+    except AttributeError:
+        # Ignore Genewiz page load errors from time to time
+        return 5 * 60
 
     # Extracted saved non-extracted orders
 
