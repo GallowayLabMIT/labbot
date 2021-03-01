@@ -11,10 +11,15 @@ module_config = {}
 loader = ModuleLoader()
 
 def is_checked_out():
-    with open('flowjo_checkout.json') as f:
+    try:
+        with open('flowjo_checkout.json') as f:
 
-        status = json.load(f)
-        return status['in_use']
+            status = json.load(f)
+            return status['in_use']
+    except FileNotFoundError:
+        # Create the JSON file, with it not in use
+        write_status(False)
+        return False
 
 def write_status(checked_out: bool):
     with open('flowjo_checkout.json', 'w') as f:
