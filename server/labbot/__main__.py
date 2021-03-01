@@ -124,6 +124,7 @@ for module_name in secrets['global']['modules']:
         config['slack_client'] = bolt_client.client
         config['logger'] = functools.partial(slack_log, header=module_name)
         config['shutdown_func'] = shutdown_func
+        config['hometab_update'] = update_home_tab
         module_hooks = module.register_module(config)
         module_hooks.register(bolt_client, api)
         home_tab_functions.extend(module_hooks.home_accumulator)
