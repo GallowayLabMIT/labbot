@@ -38,7 +38,7 @@ def register_module(config):
         raise RuntimeError("Expected a secret token for authentication! We weren't passed a 'token' key")
     return loader
 
-@loader.fastapi.get("flowjo/state")
+@loader.fastapi.get("/flowjo/state")
 def current_status(token: str):
     # If the token is correct, respond with the current checkout status
     if (token != module_config['token']):
@@ -46,7 +46,7 @@ def current_status(token: str):
 
     return {"checked_out": is_checked_out()}
 
-@loader.fastapi.post("flowjo/checkin")
+@loader.fastapi.post("/flowjo/checkin")
 def checkin_license(token: str):
     if (token != module_config['token']):
         raise HTTPException(status_code=401, detail="Invalid auth token")
@@ -57,7 +57,7 @@ def checkin_license(token: str):
     write_status(False)
     module_config['hometab_update']()
 
-@loader.fastapi.post("flowjo/checkout")
+@loader.fastapi.post("/flowjo/checkout")
 def checkout_license(token: str):
     if (token != module_config['token']):
         raise HTTPException(status_code=403, detail="Invalid auth token")
