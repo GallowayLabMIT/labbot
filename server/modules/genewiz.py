@@ -39,69 +39,73 @@ def poll(slack_client):
     Returns:
         None
     """
-    # Login to Genewiz
-    session = requests.Session()
-    r = session.post('https://clims4.genewiz.com/RegisterAccount/Login',
-            data={'LoginName': module_config['username'],
-                'Password' : module_config['password'], 'RememberMe': 'true'})
-    main_screen = session.get('https://clims4.genewiz.com/CustomerHome/Index') 
-
-    # Pull out the sequencing requests and oligos
     try:
-        sanger_sequencing = _extract_orders(main_screen.text, 'Sanger Sequencing')
-        oligos = _extract_orders(main_screen.text, 'Oligo Synthesis')
-    except AttributeError:
-        # Ignore Genewiz page load errors from time to time
-        return 5 * 60
+        # Login to Genewiz
+        session = requests.Session()
+        r = session.post('https://clims4.genewiz.com/RegisterAccount/Login',
+                data={'LoginName': module_config['username'],
+                    'Password' : module_config['password'], 'RememberMe': 'true'})
+        main_screen = session.get('https://clims4.genewiz.com/CustomerHome/Index') 
 
-    # Extracted saved non-extracted orders
-
-    if not os.path.isfile('pending_genewiz.json'):
-        pending_orders = {}
-    else:
-        with open('pending_genewiz.json') as pending:
-            pending_json = pending.read()
-            if len(pending_json) == 0:
-                pending_orders = {}
-            else:
-                pending_orders = set(json.loads(pending_json))
-    
-    # Find orders that used to be pending:
-    updated_sequences = [seq for seq in sanger_sequencing if
-            seq['orderStatus'] == 'Completed' and seq['id'] in pending_orders]
-
-    for sequence in updated_sequences:
-
-        (text_out, zip_filename) = _extract_seq_results(sequence, session)
+        # Pull out the sequencing requests and oligos
         try:
-            module_config['logger']('Order {} finished! Posting to #sequencing'.format(sequence['id']))
-            slack_response = slack_client.chat_postMessage(
-                channel='#sequencing',
-                text='Sequencing results:',
-                blocks=json.dumps([{'type':'section', 'text':
-                    {'type': 'mrkdwn', 'text': text_out}}]))
+            sanger_sequencing = _extract_orders(main_screen.text, 'Sanger Sequencing')
+            oligos = _extract_orders(main_screen.text, 'Oligo Synthesis')
+        except AttributeError:
+            # Ignore Genewiz page load errors from time to time
+            return 5 * 60
 
-            slack_response = slack_client.files_upload(
-                    channels='#sequencing',
-                    file=zip_filename,
-                    filename=os.path.basename(zip_filename))
-            assert slack_response["ok"]
-        finally:
-            os.remove(zip_filename)
-            os.rmdir(os.path.dirname(zip_filename)) # Safe because we created this tempdir
+        # Extracted saved non-extracted orders
 
-    # Update the pending orders list
-    new_pending_orders = [order['id'] for order in (sanger_sequencing + oligos)
-            if order['orderStatus'] != 'Completed']
-    
-    if set(new_pending_orders) != pending_orders:
-        module_config['logger']('New order detected. New pending queue:{}'.format(new_pending_orders))
-    
-    with open('pending_genewiz.json', 'w') as pending:
-        json.dump(new_pending_orders, pending)
+        if not os.path.isfile('pending_genewiz.json'):
+            pending_orders = {}
+        else:
+            with open('pending_genewiz.json') as pending:
+                pending_json = pending.read()
+                if len(pending_json) == 0:
+                    pending_orders = {}
+                else:
+                    pending_orders = set(json.loads(pending_json))
+        
+        # Find orders that used to be pending:
+        updated_sequences = [seq for seq in sanger_sequencing if
+                seq['orderStatus'] == 'Completed' and seq['id'] in pending_orders]
 
-    # Reschedule in 5 minutes
-    return 5 * 60
+        for sequence in updated_sequences:
+
+            (text_out, zip_filename) = _extract_seq_results(sequence, session)
+            try:
+                module_config['logger']('Order {} finished! Posting to #sequencing'.format(sequence['id']))
+                slack_response = slack_client.chat_postMessage(
+                    channel='#sequencing',
+                    text='Sequencing results:',
+                    blocks=json.dumps([{'type':'section', 'text':
+                        {'type': 'mrkdwn', 'text': text_out}}]))
+
+                slack_response = slack_client.files_upload(
+                        channels='#sequencing',
+                        file=zip_filename,
+                        filename=os.path.basename(zip_filename))
+                assert slack_response["ok"]
+            finally:
+                os.remove(zip_filename)
+                os.rmdir(os.path.dirname(zip_filename)) # Safe because we created this tempdir
+
+        # Update the pending orders list
+        new_pending_orders = [order['id'] for order in (sanger_sequencing + oligos)
+                if order['orderStatus'] != 'Completed']
+        
+        if set(new_pending_orders) != pending_orders:
+            module_config['logger']('New order detected. New pending queue:{}'.format(new_pending_orders))
+        
+        with open('pending_genewiz.json', 'w') as pending:
+            json.dump(new_pending_orders, pending)
+
+    except Exception as e:
+        module_config['logger'](str(e))
+    finally:
+        # Reschedule in 5 minutes
+        return 5 * 60
 
 
 def _extract_seq_results(order, session):
