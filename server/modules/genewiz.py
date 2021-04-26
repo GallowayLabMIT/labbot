@@ -74,6 +74,7 @@ def poll(slack_client):
 
         (text_out, zip_filename) = _extract_seq_results(sequence, session)
         try:
+            module_config['logger']('Order {} finished! Posting to #sequencing'.format(sequence['id']))
             slack_response = slack_client.chat_postMessage(
                 channel='#sequencing',
                 text='Sequencing results:',
@@ -92,6 +93,10 @@ def poll(slack_client):
     # Update the pending orders list
     new_pending_orders = [order['id'] for order in (sanger_sequencing + oligos)
             if order['orderStatus'] != 'Completed']
+    
+    if set(new_pending_orders) != pending_orders:
+        module_config['logger']('New order detected. New pending queue:{}'.format(new_pending_orders))
+    
     with open('pending_genewiz.json', 'w') as pending:
         json.dump(new_pending_orders, pending)
 
