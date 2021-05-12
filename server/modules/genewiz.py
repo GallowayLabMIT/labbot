@@ -135,62 +135,62 @@ def _extract_seq_results(order, session):
     reaction_list = list(details['OrdersResults'].values())[0]
     
     # Extract each sequencing reaction information
-    with tempfile.TemporaryDirectory() as tempdir:
-        ab1_files = []
-        names = []
-        qualities = []
-        lengths = []
-        for reaction in reaction_list:
-            quality = reaction['QS']
-            length = reaction['CRL']
-            order_id = order['id']
-            sequencer = reaction['Sequencer']
-            folder = reaction['ActualPlateFolder']
-            file_name = reaction['AB1FileName']
-            labwell = '_' + reaction['LabWellFormatted']
-            query_string = {'orderId': order_id,
-                        'sequencer': sequencer,
-                        'folder': folder,
-                        'fileName': file_name[:-4] + labwell + '.ab1',
-                        'labwell': labwell}
+    tempdir = tempfile.mkdtemp()
+    ab1_files = []
+    names = []
+    qualities = []
+    lengths = []
+    for reaction in reaction_list:
+        quality = reaction['QS']
+        length = reaction['CRL']
+        order_id = order['id']
+        sequencer = reaction['Sequencer']
+        folder = reaction['ActualPlateFolder']
+        file_name = reaction['AB1FileName']
+        labwell = '_' + reaction['LabWellFormatted']
+        query_string = {'orderId': order_id,
+                    'sequencer': sequencer,
+                    'folder': folder,
+                    'fileName': file_name[:-4] + labwell + '.ab1',
+                    'labwell': labwell}
 
-            reaction['SamplePrimerName'] = reaction['SamplePrimerName'].replace('/','--')
-            names.append(reaction['SamplePrimerName'])
-            qualities.append(quality)
-            lengths.append(length)
+        reaction['SamplePrimerName'] = reaction['SamplePrimerName'].replace('/','--')
+        names.append(reaction['SamplePrimerName'])
+        qualities.append(quality)
+        lengths.append(length)
 
-            ab1_file = session.get('https://clims4.genewiz.com/SangerSequencing/DownloadResult',
-                    data=query_string)
-            # Assert that we actually got an AB1 files
-            assert ab1_file.content[0:4] == b'ABIF'
+        ab1_file = session.get('https://clims4.genewiz.com/SangerSequencing/DownloadResult',
+                data=query_string)
+        # Assert that we actually got an AB1 files
+        assert ab1_file.content[0:4] == b'ABIF'
 
-            # Save the file into our temp directory
-            new_ab1 = os.path.join(tempdir, reaction['SamplePrimerName'] + '.ab1')
-            ab1_files.append(new_ab1)
-            with open(new_ab1, 'wb') as outfile:
-                outfile.write(ab1_file.content)
+        # Save the file into our temp directory
+        new_ab1 = os.path.join(tempdir, reaction['SamplePrimerName'] + '.ab1')
+        ab1_files.append(new_ab1)
+        with open(new_ab1, 'wb') as outfile:
+            outfile.write(ab1_file.content)
 
-        # Zip all files together
-        order_name = reaction_list[0]['OrderName'].replace('/','--')
-        if order_name is None:
-            order_name = 'no_order_name'
-        zip_filename = os.path.join(tempdir, order_name + '.zip')
-        with ZipFile(zip_filename, 'w') as outzip:
-            for ab1 in ab1_files:
-                outzip.write(ab1, arcname = os.path.basename(ab1))
+    # Zip all files together
+    order_name = reaction_list[0]['OrderName'].replace('/','--')
+    if order_name is None:
+        order_name = 'no_order_name'
+    zip_filename = os.path.join(tempdir, order_name + '.zip')
+    with ZipFile(zip_filename, 'w') as outzip:
+        for ab1 in ab1_files:
+            outzip.write(ab1, arcname = os.path.basename(ab1))
 
-        # Cleanup
-        for filename in ab1_files:
-            os.remove(filename)
+    # Cleanup
+    for filename in ab1_files:
+        os.remove(filename)
 
-        # Built output string:
-        url = '<https://clims4.genewiz.com/SangerSequencing/ViewResults?OrderID={}|Sequencing results>'.format(order['id'])
-        order_str = 'Order: {}'.format(order_name)
-        table = ''
-        for tup in zip(names, lengths, qualities):
-            table += '\n\t{}: Length {}, quality {}'.format(*tup)
-        
-        return (order_str + '\n' + url + table, zip_filename)
+    # Built output string:
+    url = '<https://clims4.genewiz.com/SangerSequencing/ViewResults?OrderID={}|Sequencing results>'.format(order['id'])
+    order_str = 'Order: {}'.format(order_name)
+    table = ''
+    for tup in zip(names, lengths, qualities):
+        table += '\n\t{}: Length {}, quality {}'.format(*tup)
+    
+    return (order_str + '\n' + url + table, zip_filename)
 
 def _extract_orders(html, order_type=None):
     """
