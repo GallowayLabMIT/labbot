@@ -171,9 +171,10 @@ def _extract_seq_results(order, session):
             outfile.write(ab1_file.content)
 
     # Zip all files together
-    order_name = reaction_list[0]['OrderName'].replace('/','--')
+    order_name = reaction_list[0]['OrderName']
     if order_name is None:
         order_name = 'no_order_name'
+    order_name = order_name.replace('/', '--')
     zip_filename = os.path.join(tempdir, order_name + '.zip')
     with ZipFile(zip_filename, 'w') as outzip:
         for ab1 in ab1_files:
