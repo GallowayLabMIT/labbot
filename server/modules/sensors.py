@@ -101,7 +101,7 @@ def register_module(config):
     
     
     # Attempt to connect to MQTT
-    mqtt_client.reinitalize(client_id=module_config['mqtt']['client_id'], clean_session=False)
+    mqtt_client.reinitialise(client_id=module_config['mqtt']['client_id'], clean_session=False)
     mqtt_client.tls_set(tls_version=mqtt.ssl.PROTOCOL_TLS)
     mqtt_client.on_connect = lambda x: x
     mqtt_client.on_message = lambda x: x
