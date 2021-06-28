@@ -128,18 +128,18 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
     cursor = db_con.cursor()
     for s_message in message.sensorMessages:
         # See if sensor is already in database. If not, add it as a 
-        cursor.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", s_message.sensorName)
+        cursor.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (s_message.sensorName,))
         if not cursor.fetchone():
-            cursor.execute("INSERT INTO sensors(type,name) VALUES (?,?);", 0, s_message.sensorName)
+            cursor.execute("INSERT INTO sensors(type,name) VALUES (?,?);", (0, s_message.sensorName))
         # Find sensor ID, writing measurement into 
-        cursor.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", s_message.sensorName)
+        cursor.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (s_message.sensorName,))
         sensor_id = cursor.fetchone()
         cursor.execute(
-            "INSERT INTO temperature_measurements(datetime,sensor,measurement) VALUES (?,?,?)",
+            "INSERT INTO temperature_measurements(datetime,sensor,measurement) VALUES (?,?,?)",(
             datetime.datetime.now(datetime.timezone.utc).isoformat(),
             sensor_id,
             float(s_message.dataValue)
-        )
+        ))
 
     module_config['logger'](f'Got message {message}')
     return {'success': True}
