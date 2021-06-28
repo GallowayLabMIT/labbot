@@ -95,6 +95,7 @@ def register_module(config):
         datetime text,
         sensor integer NOT NULL,
         measurement real NOT NULL,
+        battery_level real NOT NULL,
         FOREIGN KEY (sensor)
             REFERENCES sensors (sensor)
     );
@@ -135,10 +136,11 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
         cursor.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (s_message.sensorName,))
         sensor_id = cursor.fetchone()[0]
         cursor.execute(
-            "INSERT INTO temperature_measurements(datetime,sensor,measurement) VALUES (?,?,?)",(
+            "INSERT INTO temperature_measurements(datetime,sensor,measurement,battery_level) VALUES (?,?,?)",(
             datetime.datetime.now(datetime.timezone.utc).isoformat(),
             sensor_id,
-            float(s_message.dataValue)
+            float(s_message.dataValue),
+            float(s_message.batteryLevel)
         ))
 
     module_config['logger'](f'Got message {message}')
