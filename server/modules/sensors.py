@@ -4,7 +4,7 @@ Module that tracks various in-lab sensors using MQTT and iMonnit.
 from labbot.module_loader import ModuleLoader
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
-from typing import Collection
+import typing
 import json
 
 
@@ -41,7 +41,7 @@ class MonnitSensorMessage(BaseModel):
 
 class MonnitMessage(BaseModel):
     gatewayMessage: MonnitGatewayMessage
-    sensorMessages: Collection[MonnitSensorMessage]
+    sensorMessages: typing.List[MonnitSensorMessage]
 
 module_config = {}
 
