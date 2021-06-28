@@ -11,6 +11,6 @@ setup(
         install_requires=['beautifulsoup4', 'slackclient',
                           'requests', 'fastapi', 'uvicorn',
                           'python-multipart', 'pytz',
-                          'slack_bolt', 'uvloop',
+                          'slack_bolt', 'uvloop', 'paho-mqtt',
                           'google-api-python-client', 'google-auth-httplib2', 'google-auth-oauthlib'],
         zip_safe=True)
