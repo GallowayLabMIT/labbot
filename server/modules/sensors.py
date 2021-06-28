@@ -136,7 +136,7 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
         cursor.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (s_message.sensorName,))
         sensor_id = cursor.fetchone()[0]
         cursor.execute(
-            "INSERT INTO temperature_measurements(datetime,sensor,measurement,battery_level) VALUES (?,?,?)",(
+            "INSERT INTO temperature_measurements(datetime,sensor,measurement,battery_level) VALUES (?,?,?,?)",(
             datetime.datetime.now(datetime.timezone.utc).isoformat(),
             sensor_id,
             float(s_message.dataValue),
