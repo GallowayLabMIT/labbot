@@ -53,34 +53,6 @@ loader = ModuleLoader()
 
 mqtt_client = mqtt.Client()
 
-# Initalize database connection
-db_con = sqlite3.connect('sensors.db')
-cursor = db_con.cursor()
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS sensors (
-    id integer PRIMARY KEY,
-    type integer NOT NULL,
-    name text NOT NULL
-);
-''')
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS temperature_measurements (
-    datetime text,
-    sensor integer NOT NULL,
-    measurement real NOT NULL,
-    FOREIGN KEY (sensor)
-        REFERENCES sensors (sensor)
-);
-''')
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS alarm_measurements (
-    datetime text,
-    sensor integer NOT NULL,
-    measurement real NOT NULL,
-    FOREIGN KEY (sensor)
-        REFERENCES sensors (sensor)
-);
-''')
 
 
 def register_module(config):
@@ -108,6 +80,35 @@ def register_module(config):
     mqtt_client.username_pw_set(module_config['mqtt']['username'], module_config['mqtt']['password'])
     mqtt_client.connect_async(module_config['mqtt']['url'], module_config['mqtt']['port'], keepalive=60)
 
+    # Init database connection
+    db_con = sqlite3.connect('sensors.db')
+    cursor = db_con.cursor()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS sensors (
+        id integer PRIMARY KEY,
+        type integer NOT NULL,
+        name text NOT NULL
+    );
+    ''')
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS temperature_measurements (
+        datetime text,
+        sensor integer NOT NULL,
+        measurement real NOT NULL,
+        FOREIGN KEY (sensor)
+            REFERENCES sensors (sensor)
+    );
+    ''')
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS alarm_measurements (
+        datetime text,
+        sensor integer NOT NULL,
+        measurement real NOT NULL,
+        FOREIGN KEY (sensor)
+            REFERENCES sensors (sensor)
+    );
+    ''')
+
     return loader
 
 imonnit_security = HTTPBasic()
@@ -123,6 +124,8 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
             headers={"WWW-Authenticate": "Basic"}
         )
     
+    db_con = sqlite3.connect('sensors.db')
+    cursor = db_con.cursor()
     for s_message in message.sensorMessages:
         # See if sensor is already in database. If not, add it as a 
         cursor.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", s_message.sensorName)
