@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS sensors (
     type integer NOT NULL,
     name text NOT NULL
 );
+''')
+cursor.execute('''
 CREATE TABLE IF NOT EXISTS temperature_measurements (
     datetime text,
     sensor integer NOT NULL,
@@ -69,6 +71,8 @@ CREATE TABLE IF NOT EXISTS temperature_measurements (
     FOREIGN KEY (sensor)
         REFERENCES sensors (sensor)
 );
+''')
+cursor.execute('''
 CREATE TABLE IF NOT EXISTS alarm_measurements (
     datetime text,
     sensor integer NOT NULL,
