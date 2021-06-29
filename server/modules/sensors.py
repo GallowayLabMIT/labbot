@@ -152,7 +152,7 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
 @loader.timer
 def poll_mqtt(slack_client):
     # Check that MQTT is still alive
-    if not mqtt_client.connected:
+    if mqtt_client._state != mqtt.mqtt_cs_connected:
         mqtt_client.reconnect()
     # Call the MQTT loop command once every ten seconds
     mqtt_client.loop(timeout=1.0)
