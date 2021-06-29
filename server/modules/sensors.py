@@ -57,7 +57,11 @@ mqtt_client = mqtt.Client()
 
 
 def on_connect(client, _, flags, rc):
-    module_config['logger'](f'Connected to MQTT broker with state {rc}')
+    client.subscribe('status/request')
+
+def on_message(client, userdata, msg):
+    if msg.topic == 'status/request':
+        client.publish('status/current', '0')
 
 
 def register_module(config):
@@ -81,6 +85,7 @@ def register_module(config):
     mqtt_client.reinitialise(client_id=module_config['mqtt']['client_id'], clean_session=False)
     mqtt_client.tls_set(tls_version=mqtt.ssl.PROTOCOL_TLS)
     mqtt_client.on_connect = on_connect
+    mqtt_client.on_message = on_message
     #mqtt_client.on_message = lambda x: x
     mqtt_client.username_pw_set(module_config['mqtt']['username'], module_config['mqtt']['password'])
     mqtt_client.connect_async(module_config['mqtt']['url'], module_config['mqtt']['port'], keepalive=60)
@@ -156,7 +161,4 @@ def poll_mqtt(slack_client):
         mqtt_client.reconnect()
     # Call the MQTT loop command once every ten seconds
     mqtt_client.loop(timeout=1.0)
-    rand_state = random.randint(0,2)
-    message = mqtt_client.publish('status/current', str(rand_state))
-    module_config['logger'](f'Set state to {message}, state: {message.rc}')
     return 10
