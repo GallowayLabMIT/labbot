@@ -10,6 +10,8 @@ import typing
 import sqlite3
 import secrets
 import datetime
+import struct
+import random
 
 
 class MonnitGatewayMessage(BaseModel):
@@ -150,4 +152,5 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
 def poll_mqtt(slack_client):
     # Call the MQTT loop command once every ten seconds
     mqtt_client.loop(timeout=1.0)
+    mqtt_client.publish('status/current', struct.pack('c', random.randint(0,2)))
     return 10
