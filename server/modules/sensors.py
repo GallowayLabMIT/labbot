@@ -151,6 +151,6 @@ def poll_mqtt(slack_client):
     # Call the MQTT loop command once every ten seconds
     mqtt_client.loop(timeout=1.0)
     rand_state = random.randint(0,2)
-    mqtt_client.publish('status/current', struct.pack('c', bytes((rand_state,)))).wait_for_publish()
-    module_config['logger'](f'Set state to {rand_state}')
+    message = mqtt_client.publish('status/current', struct.pack('c', bytes((rand_state,))))
+    module_config['logger'](f'Set state to {message}, state: {message.rc}')
     return 10
