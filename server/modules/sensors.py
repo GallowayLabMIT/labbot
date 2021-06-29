@@ -163,5 +163,5 @@ def poll_mqtt(slack_client):
     if mqtt_client._state == mqtt.mqtt_cs_connect_async:
         mqtt_client.reconnect()
     # Call the MQTT loop command once every ten seconds
-    mqtt_client.loop(timeout=1.0)
-    return 10
+    mqtt_client.loop(timeout=0.1)
+    return 5
