@@ -144,13 +144,13 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
             float(s_message.dataValue),
             float(s_message.batteryLevel)
         ))
-
-    module_config['logger'](f'Got message {message}')
     return {'success': True}
 
 @loader.timer
 def poll_mqtt(slack_client):
     # Call the MQTT loop command once every ten seconds
     mqtt_client.loop(timeout=1.0)
-    mqtt_client.publish('status/current', struct.pack('c', random.randint(0,2)))
+    rand_state = random.randint(0,2)
+    mqtt_client.publish('status/current', struct.pack('c', bytes((rand_state,))))
+    module_config['logger'](f'Set state to {rand_state}')
     return 10
