@@ -57,11 +57,9 @@ mqtt_client = mqtt.Client()
 
 
 def on_connect(client, _, flags, rc):
-    print('In on connect!!!')
     client.subscribe('status/request')
 
 def on_message(client, userdata, msg):
-    print('In on message!!!')
     if msg.topic == 'status/request':
         client.publish('status/current', '0')
 
