@@ -57,9 +57,11 @@ mqtt_client = mqtt.Client()
 
 
 def on_connect(client, _, flags, rc):
+    print('In on connect!!!')
     client.subscribe('status/request')
 
 def on_message(client, userdata, msg):
+    print('In on message!!!')
     if msg.topic == 'status/request':
         client.publish('status/current', '0')
 
@@ -86,6 +88,7 @@ def register_module(config):
     mqtt_client.tls_set(tls_version=mqtt.ssl.PROTOCOL_TLS)
     mqtt_client.on_connect = on_connect
     mqtt_client.on_message = on_message
+    mqtt_client.enable_logger()
     #mqtt_client.on_message = lambda x: x
     mqtt_client.username_pw_set(module_config['mqtt']['username'], module_config['mqtt']['password'])
     mqtt_client.connect_async(module_config['mqtt']['url'], module_config['mqtt']['port'], keepalive=60)
