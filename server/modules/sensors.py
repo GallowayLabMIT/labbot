@@ -281,6 +281,7 @@ def dev_tools_home_tab(user):
     # Ignores the user, displaying the same thing
     # for everyone
     home_tab_blocks = BASE_HOME_TAB_MODEL.copy()
+    status_dict = check_status()
     db_con = sqlite3.connect('sensors.db')
     for id, name in db_con.execute("SELECT id, name FROM sensors WHERE type=0"):
         cursor = db_con.cursor()
@@ -289,6 +290,6 @@ def dev_tools_home_tab(user):
         if row is not None:
             timestamp = datetime.datetime.fromisoformat(row[0])
             temp = float(row[1])
-            home_tab_blocks.append(generate_sensor_status_item(name, 0, timestamp, temp))
+            home_tab_blocks.append(generate_sensor_status_item(name, status_dict[name], timestamp, temp))
         cursor.close()
     return home_tab_blocks
