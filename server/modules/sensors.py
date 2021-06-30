@@ -209,7 +209,7 @@ def readable_delta(from_timestamp:datetime.datetime, until_timestamp:datetime.da
 
 
 def generate_sensor_status_item(sensor_name: str, status: int, timestamp:datetime.datetime, temp: float) -> dict:
-    status_mapping = {0: 'large_green_circle:', 1:':large_yellow_circle:', 2: ':red_circle:'}
+    status_mapping = {0: ':large_green_circle:', 1:':large_yellow_circle:', 2: ':red_circle:'}
     str_delta = readable_delta(timestamp, datetime.datetime.now(datetime.timezone.utc))
     return {
         "type": "section",
