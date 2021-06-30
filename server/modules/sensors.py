@@ -181,10 +181,17 @@ BASE_HOME_TAB_MODEL = {
 
 
 # -- https://stackoverflow.com/a/5333305 -- CC BY-SA 2.5 ----------------------------------
-def readable_delta(from, until):
-    '''Returns a nice readable delta with datetimes'''
+def plur(it):
+    '''Quick way to know when you should pluralize something.'''
+    try:
+        size = len(it)
+    except TypeError:
+        size = int(it)
+    return '' if size==1 else 's'
 
-    delta = until - from
+def readable_delta(from_timestamp:datetime.datetime, until_timestamp:datetime.datetime) -> str:
+    '''Returns a nice readable delta with datetimes'''
+    delta = until_timestamp - from_timestamp
 
     # deltas store time as seconds and days, we have to get hours and minutes ourselves
     delta_minutes = delta.seconds // 60
@@ -200,14 +207,6 @@ def readable_delta(from, until):
         return '%d minute%s ago' % (delta_minutes, plur(delta_minutes))
     else:
         return '%d second%s ago' % (delta.seconds, plur(delta.seconds))
-
-def plur(it):
-    '''Quick way to know when you should pluralize something.'''
-    try:
-        size = len(it)
-    except TypeError:
-        size = int(it)
-    return '' if size==1 else 's'
 # ---------------------------------------------------------------------------------------
 
 
