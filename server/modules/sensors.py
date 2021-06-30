@@ -215,9 +215,15 @@ def update_status():
 
     for k, v in status_dict.items():
         if v == 1:
-            module_config['logger'](f'Sensor {k} missed its heartbeat checkin!')
+            module_config['slack_client'].chat_postMessage(
+                channel='labbot_debug',
+                text='Sensor {k} missed its heartbeat check-in!'
+            )
         if v == 2:
-            module_config['logger'](f'Sensor {k} is alarming!')
+            module_config['slack_client'].chat_postMessage(
+                channel='admin',
+                text='@channel Sensor {k} is alarming!'
+            )
 
 @loader.timer
 def status_updates(_):
