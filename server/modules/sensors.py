@@ -232,6 +232,7 @@ def dev_tools_home_tab(user):
     cursor = db_con.cursor()
     cursor.execute("SELECT id, name FROM sensors WHERE type=0")
     sensors = cursor.fetchall()
+    module_config['logger'](sensors)
     for id, name in sensors:
         cursor.execute("SELECT datetime, measurement FROM temperature_measurements ORDER BY datetime DESC WHERE sensor=?", (id,))
         row = cursor.fetchone()
