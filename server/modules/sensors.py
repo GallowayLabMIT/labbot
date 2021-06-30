@@ -179,8 +179,9 @@ def check_status() -> dict:
     cursor = db_con.cursor()
     sensor_status = {}
     for sensor, limits in module_config['sensor_limits'].items():
-        sensor_id = db_con.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (sensor,))
         sensor_status[sensor] = 0
+        cursor.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (sensor,))
+        sensor_id = cursor.fetchone()
         if sensor_id is not None:
             cursor.execute("SELECT datetime, measurement FROM temperature_measurements WHERE sensor=? ORDER BY datetime DESC", (sensor_id[0],))
             alarming = True
