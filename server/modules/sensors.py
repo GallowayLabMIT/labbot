@@ -163,21 +163,18 @@ def poll_mqtt(slack_client):
     mqtt_client.loop(timeout=0.1)
     return 5
 
-BASE_HOME_TAB_MODEL = {
-    "type": "home",
-    "blocks": [
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": "*Sensor status*"
-            }
-        },
-        {
-            "type": "divider"
+BASE_HOME_TAB_MODEL = [
+    {
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": "*Sensor status*"
         }
-    ]
-}
+    },
+    {
+        "type": "divider"
+    }
+]
 
 
 # -- https://stackoverflow.com/a/5333305 -- CC BY-SA 2.5 ----------------------------------
@@ -230,7 +227,7 @@ def generate_sensor_status_item(sensor_name: str, status: int, timestamp:datetim
 def dev_tools_home_tab(user):
     # Ignores the user, displaying the same thing
     # for everyone
-    home_tab_model = BASE_HOME_TAB_MODEL.copy()
+    home_tab_blocks = BASE_HOME_TAB_MODEL.copy()
     db_con = sqlite3.connect('sensors.db')
     cursor = db_con.cursor()
     cursor.execute("SELECT id, name FROM sensors WHERE type=0")
@@ -241,5 +238,5 @@ def dev_tools_home_tab(user):
         if row is not None:
             timestamp = datetime.datetime.fromisoformat(row[0]['datetime'])
             temp = float(row[0]['measurement'])
-            home_tab_model['blocks'].append(generate_sensor_status_item(name, 2, timestamp, temp))
-    return [home_tab_model,]
+            home_tab_blocks.append(generate_sensor_status_item(name, 2, timestamp, temp))
+    return home_tab_blocks
