@@ -235,6 +235,8 @@ def dev_tools_home_tab(user):
         cursor.execute("SELECT datetime, measurement FROM temperature_measurements WHERE sensor=? ORDER BY datetime DESC", (id,))
         row = cursor.fetchone()
         if row is not None:
+            module_config['logger'](row)
+            module_config['logger'](row[0])
             timestamp = datetime.datetime.fromisoformat(row[0]['datetime'])
             temp = float(row[0]['measurement'])
             home_tab_blocks.append(generate_sensor_status_item(name, 2, timestamp, temp))
