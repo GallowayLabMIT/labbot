@@ -119,6 +119,8 @@ def register_module(config):
             REFERENCES sensors (sensor)
     );
     ''')
+    db_con.commit()
+    cursor.close()
 
     return loader
 
@@ -152,6 +154,8 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
             float(s_message.dataValue),
             float(s_message.batteryLevel)
         ))
+    db_con.commit()
+    cursor.close()
     return {'success': True}
 
 @loader.timer
@@ -240,4 +244,5 @@ def dev_tools_home_tab(user):
             timestamp = datetime.datetime.fromisoformat(row[0]['datetime'])
             temp = float(row[0]['measurement'])
             home_tab_blocks.append(generate_sensor_status_item(name, 2, timestamp, temp))
+    cursor.close()
     return home_tab_blocks
