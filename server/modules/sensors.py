@@ -10,8 +10,7 @@ import typing
 import sqlite3
 import secrets
 import datetime
-import struct
-import random
+import time
 
 
 class MonnitGatewayMessage(BaseModel):
@@ -160,6 +159,88 @@ def poll_mqtt(slack_client):
     # Check that MQTT is still alive
     if mqtt_client._state == mqtt.mqtt_cs_connect_async:
         mqtt_client.reconnect()
-    # Call the MQTT loop command once every ten seconds
+    # Call the MQTT loop command once every five seconds
     mqtt_client.loop(timeout=0.1)
     return 5
+
+BASE_HOME_TAB_MODEL = {
+    "type": "home",
+    "blocks": [
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "*Sensor status*"
+            }
+        },
+        {
+            "type": "divider"
+        }
+    ]
+}
+
+
+# -- https://stackoverflow.com/a/5333305 -- CC BY-SA 2.5 ----------------------------------
+def readable_delta(from:datetime.datetime, until=datetime.datetime):
+    '''Returns a nice readable delta with datetimes'''
+
+    delta = until - from
+
+    # deltas store time as seconds and days, we have to get hours and minutes ourselves
+    delta_minutes = delta.seconds // 60
+    delta_hours = delta_minutes // 60
+
+    ## show a fuzzy but useful approximation of the time delta
+    if delta.days:
+        return '%d day%s ago' % (delta.days, plur(delta.days))
+    elif delta_hours:
+        return '%d hour%s, %d minute%s ago' % (delta_hours, plur(delta_hours),
+                                               delta_minutes, plur(delta_minutes))
+    elif delta_minutes:
+        return '%d minute%s ago' % (delta_minutes, plur(delta_minutes))
+    else:
+        return '%d second%s ago' % (delta.seconds, plur(delta.seconds))
+
+def plur(it):
+    '''Quick way to know when you should pluralize something.'''
+    try:
+        size = len(it)
+    except TypeError:
+        size = int(it)
+    return '' if size==1 else 's'
+# ---------------------------------------------------------------------------------------
+
+
+def generate_sensor_status_item(sensor_name: str, status: int, timestamp:datetime.datetime, temp: float) -> dict:
+    status_mapping = {0: 'large_green_circle:', 1:':large_yellow_circle', 2: ':red_circle'}
+    str_delta = readable_delta(timestamp, datetime.datetime.now(datetime.timezone.utc))
+    return {
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": f"{status_mapping[status]}\t*{sensor_name}*\t\t_last update {str_delta}_\n\t\t *Temperature:* {temp:.1f}C"
+        },
+        "accessory": {
+            "type": "image",
+            "image_url": "https://gallowaylabmit.github.io/protocols",
+            "alt_text": "Temperature graph not avaliable"
+        }
+    }
+
+@loader.home_tab
+def dev_tools_home_tab(user):
+    # Ignores the user, displaying the same thing
+    # for everyone
+    home_tab_model = BASE_HOME_TAB_MODEL.copy()
+    db_con = sqlite3.connect('sensors.db')
+    cursor = db_con.cursor()
+    cursor.execute("SELECT id, name FROM sensors WHERE type=0")
+    sensors = cursor.fetchall()
+    for id, name in sensors:
+        cursor.execute("SELECT datetime, measurement FROM temperature_measurements ORDER BY datetime DESC WHERE sensor=?", (id,))
+        row = cursor.fetchone()
+        if row is not None:
+            timestamp = datetime.datetime.fromisoformat(row[0]['datetime'])
+            temp = float(row[0]['measurement'])
+            home_tab_model['blocks'].append(generate_sensor_status_item(name, 2, timestamp, temp))
+    return [home_tab_model,]
