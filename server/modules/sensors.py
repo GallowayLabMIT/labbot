@@ -181,7 +181,7 @@ BASE_HOME_TAB_MODEL = {
 
 
 # -- https://stackoverflow.com/a/5333305 -- CC BY-SA 2.5 ----------------------------------
-def readable_delta(from:datetime.datetime, until=datetime.datetime):
+def readable_delta(from:datetime.datetime, until:datetime.datetime):
     '''Returns a nice readable delta with datetimes'''
 
     delta = until - from
