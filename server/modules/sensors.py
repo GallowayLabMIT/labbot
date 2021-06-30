@@ -60,7 +60,7 @@ def on_connect(client, _, flags, rc):
 
 def on_message(client, userdata, msg):
     if msg.topic == 'status/request':
-        client.publish('status/current', '0')
+        update_status()
 
 
 def register_module(config):
@@ -78,6 +78,8 @@ def register_module(config):
         raise RuntimeError("Expected to be passed broker location ('url' and 'port') in key 'mqtt'!")
     if 'client_id' not in module_config['mqtt']:
         raise RuntimeError("Expected to be passed a persistant client ID ('client_id') in key 'mqtt'!")
+    if 'sensor_levels' not in module_config:
+        raise RuntimeError("Expected to have sensor critical levels set in key 'sensor_levels'!")
     
     
     # Attempt to connect to MQTT
@@ -153,6 +155,7 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
                 float(s_message.batteryLevel)
             ))
             cursor.close()
+    update_status()
     return {'success': True}
 
 @loader.timer
@@ -163,6 +166,55 @@ def poll_mqtt(slack_client):
     # Call the MQTT loop command once every five seconds
     mqtt_client.loop(timeout=0.1)
     return 5
+
+
+def check_status() -> dict:
+    """
+    Checks the status of all sensors, comparing to the built in limits.
+    These limits take the form of a temperature level and a TTA, time to alarm.
+    Each also has a heartbeat_timeout, which is the time in seconds that have elapsed
+    since the last heartbeat.
+    """
+    db_con = sqlite3.connect('sensors.db')
+    cursor = db_con.cursor()
+    sensor_status = {}
+    for sensor, limits in module_config['sensor_limits'].items():
+        sensor_id = db_con.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (sensor,))
+        sensor_status[sensor] = 0
+        if sensor_id is not None:
+            cursor.execute("SELECT datetime, measurement FROM temperature_measurements WHERE sensor=? ORDER BY datetime DESC", (sensor_id,))
+            alarming = True
+            for row in cursor:
+                delta = datetime.datetime.now(datetime.timezone.utc) - datetime.datetime.fromisoformat(row[0])
+                if delta > limits['time_to_alarm_sec']:
+                    # We're no longer within the alarm period
+                    break
+                # Otherwise, AND the current alarm status. We are alarming if all entries in the time span are alarming
+                alarming = alarming and (row[1] > limits['temperature_limit'])
+            if alarming:
+                sensor_status[sensor] = 2
+        measure_counts =  db_con.execute("SELECT COUNT(*) FROM temperature_measurements WHERE sensor=? AND datetime > ?", (
+            sensor_id, str(datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=limits['heartbeat_timeout_sec']))))
+        if measure_counts == 0:
+            sensor_status[sensor] = 1
+    return sensor_status
+
+def update_status():
+    status_dict = check_status()
+    mqtt_client.publish('status/current', str(min(status_dict.values())))
+    module_config['hometab_update']()
+
+    for k, v in status_dict.items():
+        if v == 1:
+            module_config['logger'](f'Sensor {k} missed its heartbeat checkin!')
+        if v == 2:
+            module_config['logger'](f'Sensor {k} is alarming!')
+
+@loader.timer
+def status_updates():
+    update_status()
+    return 60 * 5
+
 
 BASE_HOME_TAB_MODEL = [
     {
@@ -217,11 +269,11 @@ def generate_sensor_status_item(sensor_name: str, status: int, timestamp:datetim
             "type": "mrkdwn",
             "text": f"{status_mapping[status]}\t*{sensor_name}*\t\t_last update {str_delta}_\n\t\t *Temperature:* {temp:.1f}C"
         },
-        "accessory": {
-            "type": "image",
-            "image_url": "https://gallowaylabmit.github.io/protocols",
-            "alt_text": "Temperature graph not avaliable"
-        }
+        #"accessory": {
+        #    "type": "image",
+        #    "image_url": "https://gallowaylabmit.github.io/protocols",
+        #    "alt_text": "Temperature graph not avaliable"
+        #}
     }
 
 @loader.home_tab
