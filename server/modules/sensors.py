@@ -187,7 +187,7 @@ def check_status() -> dict:
             alarming = True
             for row in cursor:
                 delta = datetime.datetime.now(datetime.timezone.utc) - datetime.datetime.fromisoformat(row[0])
-                if delta > limits['time_to_alarm_sec']:
+                if delta.seconds > limits['time_to_alarm_sec']:
                     # We're no longer within the alarm period
                     break
                 # Otherwise, AND the current alarm status. We are alarming if all entries in the time span are alarming
@@ -195,7 +195,7 @@ def check_status() -> dict:
             if alarming:
                 sensor_status[sensor] = 2
         measure_counts =  db_con.execute("SELECT COUNT(*) FROM temperature_measurements WHERE sensor=? AND datetime > ?", (
-            sensor_id[0], str(datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=limits['heartbeat_timeout_sec']))))
+            sensor_id[0], (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=limits['heartbeat_timeout_sec'])).isoformat()))
         if measure_counts == 0:
             sensor_status[sensor] = 1
     return sensor_status
