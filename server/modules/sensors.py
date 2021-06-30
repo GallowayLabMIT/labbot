@@ -78,8 +78,8 @@ def register_module(config):
         raise RuntimeError("Expected to be passed broker location ('url' and 'port') in key 'mqtt'!")
     if 'client_id' not in module_config['mqtt']:
         raise RuntimeError("Expected to be passed a persistant client ID ('client_id') in key 'mqtt'!")
-    if 'sensor_levels' not in module_config:
-        raise RuntimeError("Expected to have sensor critical levels set in key 'sensor_levels'!")
+    if 'sensor_limits' not in module_config:
+        raise RuntimeError("Expected to have sensor critical levels set in key 'sensor_limits'!")
     
     
     # Attempt to connect to MQTT
