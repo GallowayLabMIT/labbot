@@ -182,7 +182,7 @@ def check_status() -> dict:
         sensor_id = db_con.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (sensor,))
         sensor_status[sensor] = 0
         if sensor_id is not None:
-            cursor.execute("SELECT datetime, measurement FROM temperature_measurements WHERE sensor=? ORDER BY datetime DESC", (sensor_id,))
+            cursor.execute("SELECT datetime, measurement FROM temperature_measurements WHERE sensor=? ORDER BY datetime DESC", (sensor_id[0],))
             alarming = True
             for row in cursor:
                 delta = datetime.datetime.now(datetime.timezone.utc) - datetime.datetime.fromisoformat(row[0])
@@ -194,7 +194,7 @@ def check_status() -> dict:
             if alarming:
                 sensor_status[sensor] = 2
         measure_counts =  db_con.execute("SELECT COUNT(*) FROM temperature_measurements WHERE sensor=? AND datetime > ?", (
-            sensor_id, str(datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=limits['heartbeat_timeout_sec']))))
+            sensor_id[0], str(datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=limits['heartbeat_timeout_sec']))))
         if measure_counts == 0:
             sensor_status[sensor] = 1
     return sensor_status
