@@ -162,9 +162,17 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
 def poll_mqtt(slack_client):
     # Check that MQTT is still alive
     if mqtt_client._state == mqtt.mqtt_cs_connect_async:
-        mqtt_client.reconnect()
+        try:
+            mqtt_client.reconnect()
+        except Exception as e:
+            module_config['logger'](f'Got exception while reconnecting to MQTT: {e}')
     # Call the MQTT loop command once every five seconds
-    mqtt_client.loop(timeout=0.1)
+    rc = mqtt_client.loop(timeout=0.1)
+    if rc != mqtt.MQTT_ERR_SUCCESS:
+        try:
+            mqtt_client.reconnect()
+        except Exception as e:
+            module_config['logger'](f'Got exception while reconnecting to MQTT: {e}')
     return 5
 
 

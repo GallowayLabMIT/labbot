@@ -170,8 +170,11 @@ void loop() {
   // Check to see if we haven't gotten a heartbeat in a while
   int currentMillis = millis();
   if (currentMillis < lastReceiveMillis || (currentMillis - lastReceiveMillis) > heartbeatDelayMillis) {
-    state = 1;
+    if (state == 0) {
+      state = 1;
+    }
     requestUpdate();
+    Serial.println(F("Requesting update from server, no heartbeat received!"));
     lastReceiveMillis = currentMillis;
   }
   switch (state) {
