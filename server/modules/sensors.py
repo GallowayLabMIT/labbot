@@ -92,36 +92,33 @@ def register_module(config):
 
     # Init database connection
     db_con = sqlite3.connect('sensors.db')
-    cursor = db_con.cursor()
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS sensors (
-        id integer PRIMARY KEY,
-        type integer NOT NULL,
-        name text NOT NULL
-    );
-    ''')
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS temperature_measurements (
-        datetime text,
-        sensor integer NOT NULL,
-        measurement real NOT NULL,
-        battery_level real NOT NULL,
-        FOREIGN KEY (sensor)
-            REFERENCES sensors (sensor)
-    );
-    ''')
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS alarm_measurements (
-        datetime text,
-        sensor integer NOT NULL,
-        measurement real NOT NULL,
-        FOREIGN KEY (sensor)
-            REFERENCES sensors (sensor)
-    );
-    ''')
-    db_con.commit()
-    cursor.close()
-
+    with db_con:
+        db_con.execute('''
+        CREATE TABLE IF NOT EXISTS sensors (
+            id integer PRIMARY KEY,
+            type integer NOT NULL,
+            name text NOT NULL
+        );
+        ''')
+        db_con.execute('''
+        CREATE TABLE IF NOT EXISTS temperature_measurements (
+            datetime text,
+            sensor integer NOT NULL,
+            measurement real NOT NULL,
+            battery_level real NOT NULL,
+            FOREIGN KEY (sensor)
+                REFERENCES sensors (sensor)
+        );
+        ''')
+        db_con.execute('''
+        CREATE TABLE IF NOT EXISTS alarm_measurements (
+            datetime text,
+            sensor integer NOT NULL,
+            measurement real NOT NULL,
+            FOREIGN KEY (sensor)
+                REFERENCES sensors (sensor)
+        );
+        ''')
     return loader
 
 imonnit_security = HTTPBasic()
@@ -138,24 +135,24 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
         )
     
     db_con = sqlite3.connect('sensors.db')
-    cursor = db_con.cursor()
-    for s_message in message.sensorMessages:
-        # See if sensor is already in database. If not, add it as a 
-        cursor.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (s_message.sensorName,))
-        if not cursor.fetchone():
-            cursor.execute("INSERT INTO sensors(type,name) VALUES (?,?);", (0, s_message.sensorName))
-        # Find sensor ID, writing measurement into 
-        cursor.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (s_message.sensorName,))
-        sensor_id = cursor.fetchone()[0]
-        cursor.execute(
-            "INSERT INTO temperature_measurements(datetime,sensor,measurement,battery_level) VALUES (?,?,?,?)",(
-            datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            sensor_id,
-            float(s_message.dataValue),
-            float(s_message.batteryLevel)
-        ))
-    db_con.commit()
-    cursor.close()
+    with db_con:
+        for s_message in message.sensorMessages:
+            # See if sensor is already in database. If not, add it as a 
+            db_con.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (s_message.sensorName,))
+            cursor = db_con.cursor()
+            if not cursor.fetchone():
+                cursor.execute("INSERT INTO sensors(type,name) VALUES (?,?);", (0, s_message.sensorName))
+            # Find sensor ID, writing measurement into 
+            cursor.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (s_message.sensorName,))
+            sensor_id = cursor.fetchone()[0]
+            db_con.execute(
+                "INSERT INTO temperature_measurements(datetime,sensor,measurement,battery_level) VALUES (?,?,?,?)",(
+                datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                sensor_id,
+                float(s_message.dataValue),
+                float(s_message.batteryLevel)
+            ))
+            cursor.close()
     return {'success': True}
 
 @loader.timer
@@ -233,16 +230,13 @@ def dev_tools_home_tab(user):
     # for everyone
     home_tab_blocks = BASE_HOME_TAB_MODEL.copy()
     db_con = sqlite3.connect('sensors.db')
-    cursor = db_con.cursor()
-    cursor.execute("SELECT id, name FROM sensors WHERE type=0")
-    sensors = cursor.fetchall()
-    module_config['logger'](sensors)
-    for id, name in sensors:
+    for id, name in db_con.execute("SELECT id, name FROM sensors WHERE type=0"):
+        cursor = db_con.cursor()
         cursor.execute("SELECT datetime, measurement FROM temperature_measurements ORDER BY datetime DESC WHERE sensor=?", (id,))
         row = cursor.fetchone()
         if row is not None:
             timestamp = datetime.datetime.fromisoformat(row[0]['datetime'])
             temp = float(row[0]['measurement'])
             home_tab_blocks.append(generate_sensor_status_item(name, 2, timestamp, temp))
-    cursor.close()
+        cursor.close()
     return home_tab_blocks
