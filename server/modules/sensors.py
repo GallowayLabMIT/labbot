@@ -211,7 +211,7 @@ def update_status():
             module_config['logger'](f'Sensor {k} is alarming!')
 
 @loader.timer
-def status_updates():
+def status_updates(_):
     update_status()
     return 60 * 5
 
