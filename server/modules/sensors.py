@@ -232,7 +232,7 @@ def dev_tools_home_tab(user):
     db_con = sqlite3.connect('sensors.db')
     for id, name in db_con.execute("SELECT id, name FROM sensors WHERE type=0"):
         cursor = db_con.cursor()
-        cursor.execute("SELECT datetime, measurement FROM temperature_measurements ORDER BY datetime DESC WHERE sensor=?", (id,))
+        cursor.execute("SELECT datetime, measurement FROM temperature_measurements WHERE sensor=? ORDER BY datetime DESC", (id,))
         row = cursor.fetchone()
         if row is not None:
             timestamp = datetime.datetime.fromisoformat(row[0]['datetime'])
