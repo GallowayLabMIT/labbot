@@ -100,7 +100,6 @@ def update_home_tab():
     global should_update_home_tab
     home_tab_lock.acquire()
     should_update_home_tab = True
-    print('Set update flag')
     home_tab_lock.release()
 
 
