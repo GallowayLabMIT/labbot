@@ -217,19 +217,19 @@ def check_status() -> dict:
         sensor_id = cursor.fetchone()
         if sensor_id is not None:
             cursor.execute("SELECT datetime, measurement FROM temperature_measurements WHERE sensor=? ORDER BY datetime DESC", (sensor_id[0],))
-            alarming = True
+            out_of_range = True
+            nonzero_entries = False
             for row in cursor:
+                nonzero_entries = True
                 delta = datetime.datetime.now(datetime.timezone.utc) - datetime.datetime.fromisoformat(row[0])
                 if delta.seconds > limits['time_to_alarm_sec']:
                     # We're no longer within the alarm period
                     break
-                # Otherwise, AND the current alarm status. We are alarming if all entries in the time span are alarming
-                alarming = alarming and (row[1] > limits['temperature_limit'])
-        measure_counts =  db_con.execute("SELECT COUNT(*) FROM temperature_measurements WHERE sensor=? AND datetime > ?", (
-            sensor_id[0], (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=limits['heartbeat_timeout_sec'])).isoformat()))
-        if measure_counts == 0:
+                # Otherwise, AND the current alarm status. We are out of range if all entries in the time span are out of range
+                out_of_range = out_of_range and (row[1] > limits['temperature_limit'])
+        if not nonzero_entries:
             sensor_status[sensor] = 1
-        elif alarming:
+        elif out_of_range:
             sensor_status[sensor] = 2
     return sensor_status
 
