@@ -227,6 +227,7 @@ def check_status() -> dict:
                     break
                 # Otherwise, AND the current alarm status. We are out of range if all entries in the time span are out of range
                 out_of_range = out_of_range and (row[1] > limits['temperature_limit'])
+        module_config['logger'](f"Status check for {sensor}: nonzero_entries: {nonzero_entries}, out_of_range: {out_of_range}")
         if not nonzero_entries:
             sensor_status[sensor] = 1
         elif out_of_range:
