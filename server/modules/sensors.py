@@ -149,7 +149,7 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
             sensor_id = cursor.fetchone()[0]
             db_con.execute(
                 "INSERT INTO temperature_measurements(datetime,sensor,measurement,battery_level) VALUES (?,?,?,?)",(
-                datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                datetime.datetime.fromisoformat(s_message.messageDate + '+00:00'),
                 sensor_id,
                 float(s_message.dataValue),
                 float(s_message.batteryLevel)
@@ -217,12 +217,12 @@ def update_status():
         if v == 1:
             module_config['slack_client'].chat_postMessage(
                 channel='#admin',
-                text='Sensor {k} missed its heartbeat check-in!'
+                text=f'Sensor {k} missed its heartbeat check-in!'
             )
         if v == 2:
             module_config['slack_client'].chat_postMessage(
                 channel='#admin',
-                text='@channel Sensor {k} is alarming!'
+                text=f'@channel Sensor {k} is alarming!'
             )
 
 @loader.timer
