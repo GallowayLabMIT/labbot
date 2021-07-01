@@ -138,6 +138,7 @@ def register_module(config):
             id integer PRIMARY KEY,
             sensor integer NOT NULL,
             status integer NOT NULL,
+            slack_ts text,
             initial_timestamp text NOT NULL,
             last_timestamp text NOT NULL,
             inflight BOOLEAN NOT NULL CHECK (inflight IN (0, 1)),
@@ -227,7 +228,6 @@ def check_status() -> dict:
                 nonzero_entries = True
                 # Otherwise, AND the current alarm status. We are out of range if all entries in the time span are out of range
                 out_of_range = out_of_range and (row[1] > limits['temperature_limit'])
-        module_config['logger'](f"Status check for {sensor}: nonzero_entries: {nonzero_entries}, out_of_range: {out_of_range}")
         if not nonzero_entries:
             sensor_status[sensor] = 1
         elif out_of_range:
@@ -249,13 +249,13 @@ def update_status():
     for k, v in status_dict.items():
         if v == 1:
             module_config['slack_client'].chat_postMessage(
-                channel='#labbot_debug',
+                channel='#admin',
                 text=f'Sensor {k} missed its heartbeat check-in!'
             )
         if v == 2:
             module_config['slack_client'].chat_postMessage(
-                channel='#labbot_debug',
-                text=f'@channel Sensor {k} is alarming!'
+                channel='#admin',
+                text=f'<!channel> Sensor {k} is alarming!'
             )
 
 @loader.timer
@@ -266,10 +266,10 @@ def status_updates(_):
 
 BASE_HOME_TAB_MODEL = [
     {
-        "type": "section",
+        "type": "header",
         "text": {
-            "type": "mrkdwn",
-            "text": "*Sensor status*"
+            "type": "plain_text",
+            "text": "Sensor status"
         }
     },
     {
