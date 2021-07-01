@@ -220,11 +220,11 @@ def check_status() -> dict:
             out_of_range = True
             nonzero_entries = False
             for row in cursor:
-                nonzero_entries = True
                 delta = datetime.datetime.now(datetime.timezone.utc) - datetime.datetime.fromisoformat(row[0])
                 if delta.seconds > limits['time_to_alarm_sec']:
                     # We're no longer within the alarm period
                     break
+                nonzero_entries = True
                 # Otherwise, AND the current alarm status. We are out of range if all entries in the time span are out of range
                 out_of_range = out_of_range and (row[1] > limits['temperature_limit'])
         module_config['logger'](f"Status check for {sensor}: nonzero_entries: {nonzero_entries}, out_of_range: {out_of_range}")
