@@ -174,7 +174,7 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
             sensor_id = cursor.fetchone()[0]
             db_con.execute(
                 "INSERT INTO temperature_measurements(datetime,sensor,measurement,battery_level) VALUES (?,?,?,?)",(
-                datetime.datetime.fromisoformat(s_message.messageDate + '+00:00'),
+                datetime.datetime.fromisoformat(s_message.messageDate + '+00:00').isoformat(),
                 sensor_id,
                 float(s_message.dataValue),
                 float(s_message.batteryLevel)
