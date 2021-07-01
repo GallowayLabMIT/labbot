@@ -59,6 +59,12 @@ def on_connect(client, _, flags, rc):
     client.subscribe('status/request')
 
 def on_message(client, userdata, msg):
+    db_con = sqlite3.connect('sensors.db')
+    with db_con:
+        db_con.execute("INSERT INTO mqtt_log(timestamp, action) VALUES (?,?)",(
+            datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "receive:request"
+        ))
     if msg.topic == 'status/request':
         update_status()
 
@@ -117,6 +123,25 @@ def register_module(config):
             datetime text,
             sensor integer NOT NULL,
             measurement real NOT NULL,
+            FOREIGN KEY (sensor)
+                REFERENCES sensors (sensor)
+        );
+        ''')
+        db_con.execute('''
+        CREATE TABLE IF NOT EXISTS mqtt_log (
+            timestamp text,
+            action text
+        );
+        ''')
+        db_con.execute('''
+        CREATE TABLE IF NOT EXISTS alerts (
+            id integer PRIMARY KEY,
+            sensor integer NOT NULL,
+            status integer NOT NULL,
+            initial_timestamp text NOT NULL,
+            last_timestamp text NOT NULL,
+            inflight BOOLEAN NOT NULL CHECK (inflight IN (0, 1)),
+            silenced BOOLEAN NOT NULL CHECK (silenced IN (0, 1)),
             FOREIGN KEY (sensor)
                 REFERENCES sensors (sensor)
         );
@@ -210,7 +235,14 @@ def check_status() -> dict:
 
 def update_status():
     status_dict = check_status()
-    mqtt_client.publish('status/current', str(min(status_dict.values())))
+    overall_status = min(status_dict.values())
+    db_con = sqlite3.connect('sensors.db')
+    with db_con:
+        db_con.execute("INSERT INTO mqtt_log(timestamp, action) VALUES (?,?)",(
+            datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "send:status/current:{}".format(overall_status)
+        ))
+    mqtt_client.publish('status/current', str(overall_status))
     module_config['hometab_update']()
 
     for k, v in status_dict.items():
