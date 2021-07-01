@@ -166,8 +166,8 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
     with db_con:
         for s_message in message.sensorMessages:
             # See if sensor is already in database. If not, add it as a 
-            db_con.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (s_message.sensorName,))
             cursor = db_con.cursor()
+            cursor.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (s_message.sensorName,))
             if not cursor.fetchone():
                 cursor.execute("INSERT INTO sensors(type,name) VALUES (?,?);", (0, s_message.sensorName))
             # Find sensor ID, writing measurement into 
