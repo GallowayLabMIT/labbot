@@ -200,12 +200,12 @@ def check_status() -> dict:
                     break
                 # Otherwise, AND the current alarm status. We are alarming if all entries in the time span are alarming
                 alarming = alarming and (row[1] > limits['temperature_limit'])
-            if alarming:
-                sensor_status[sensor] = 2
         measure_counts =  db_con.execute("SELECT COUNT(*) FROM temperature_measurements WHERE sensor=? AND datetime > ?", (
             sensor_id[0], (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=limits['heartbeat_timeout_sec'])).isoformat()))
         if measure_counts == 0:
             sensor_status[sensor] = 1
+        elif alarming:
+            sensor_status[sensor] = 2
     return sensor_status
 
 def update_status():
@@ -216,12 +216,12 @@ def update_status():
     for k, v in status_dict.items():
         if v == 1:
             module_config['slack_client'].chat_postMessage(
-                channel='labbot_debug',
+                channel='#admin',
                 text='Sensor {k} missed its heartbeat check-in!'
             )
         if v == 2:
             module_config['slack_client'].chat_postMessage(
-                channel='admin',
+                channel='#admin',
                 text='@channel Sensor {k} is alarming!'
             )
 
