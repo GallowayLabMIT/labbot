@@ -232,6 +232,7 @@ def check_status() -> dict:
             sensor_status[sensor] = 1
         elif out_of_range:
             sensor_status[sensor] = 2
+        module_config['logger'](f'Sensor {sensor}: nonzero: {nonzero_entries}, out_of_range: {out_of_range}, status: {sensor_status[sensor]}')
     return sensor_status
 
 def update_status():
