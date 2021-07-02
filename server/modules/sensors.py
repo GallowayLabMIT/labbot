@@ -232,6 +232,7 @@ def check_status() -> dict:
             sensor_status[sensor] = 1
         elif out_of_range:
             sensor_status[sensor] = 2
+        module_config['logger'](f'Sensor {sensor}: nonzero: {nonzero_entries}, out_of_range: {out_of_range}, status: {sensor_status[sensor]}')
     return sensor_status
 
 def update_status():
@@ -249,12 +250,12 @@ def update_status():
     for k, v in status_dict.items():
         if v == 1:
             module_config['slack_client'].chat_postMessage(
-                channel='#admin',
+                channel='#labbot_debug',
                 text=f'Sensor {k} missed its heartbeat check-in!'
             )
         if v == 2:
             module_config['slack_client'].chat_postMessage(
-                channel='#admin',
+                channel='#labbot_debug',
                 text=f'<!channel> Sensor {k} is alarming!'
             )
 
