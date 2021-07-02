@@ -249,12 +249,12 @@ def update_status():
     for k, v in status_dict.items():
         if v == 1:
             module_config['slack_client'].chat_postMessage(
-                channel='#admin',
+                channel='#labbot_debug',
                 text=f'Sensor {k} missed its heartbeat check-in!'
             )
         if v == 2:
             module_config['slack_client'].chat_postMessage(
-                channel='#admin',
+                channel='#labbot_debug',
                 text=f'<!channel> Sensor {k} is alarming!'
             )
 
