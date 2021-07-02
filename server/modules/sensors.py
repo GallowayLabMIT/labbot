@@ -277,6 +277,33 @@ BASE_HOME_TAB_MODEL = [
     }
 ]
 
+alert_message = {
+	"blocks": [
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+                # TODO: make the home tab adjustable
+				"text": "Sensor *Elsa* is alarming!\t<slack://app?team=TPT6YBE56&id=A017JCZ8VK7|View dashboard>"
+			}
+		},
+		{
+			"type": "section",
+			"fields": [
+				{
+					"type": "mrkdwn",
+                    # TODO: actually fill in this stuff
+					"text": "*Last temperature:*\n-77C _(<!date^123123123^{time}>)_"
+				},
+				{
+					"type": "mrkdwn",
+					"text": "*Number of recent check-ins:*\n2"
+				}
+			]
+		}
+	]
+}
+
 
 # -- https://stackoverflow.com/a/5333305 -- CC BY-SA 2.5 ----------------------------------
 def plur(it):
