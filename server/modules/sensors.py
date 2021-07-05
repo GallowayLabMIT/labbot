@@ -372,7 +372,7 @@ def slack_alert(db_con, sensor_name: str, sensor_status: SensorStatus) -> None:
         
 def update_status():
     status_dict = check_status()
-    overall_status = min([v.overall for v in status_dict.values()]) if len(status_dict) > 0 else 0
+    overall_status = max([v.overall for v in status_dict.values()]) if len(status_dict) > 0 else 0
     db_con = sqlite3.connect('sensors.db')
     with db_con:
         db_con.execute("INSERT INTO mqtt_log(timestamp, action) VALUES (?,?)",(
