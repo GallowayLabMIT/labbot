@@ -463,7 +463,7 @@ def dev_tools_home_tab(user):
         if row is not None:
             timestamp = datetime.datetime.fromisoformat(row[0])
             temp = float(row[1])
-            home_tab_blocks.append(generate_sensor_status_item(name, status_dict[name], timestamp, temp))
+            home_tab_blocks.append(generate_sensor_status_item(name, status_dict[name].overall, timestamp, temp))
         cursor.close()
     db_con.close()
     return home_tab_blocks
