@@ -252,7 +252,7 @@ def check_status() -> dict:
             elif num_in_heartbeat_interval == 0:
                 overall_status = 1
             sensor_status[sensor] = SensorStatus(overall=overall_status, measurements=measurements)
-        module_config['logger'](f'Sensor {sensor}: {sensor_status[sensor]}')
+            module_config['logger'](f'Sensor {sensor}: {sensor_status[sensor]}')
     cursor.close()
     db_con.close()
     return sensor_status
