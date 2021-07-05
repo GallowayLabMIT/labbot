@@ -21,6 +21,7 @@ if __name__ == '__main__':
     with db_con:
         if not args.step.startswith('insert'):
             db_con.execute('DELETE FROM temperature_measurements')
+            db_con.execute('DELETE FROM alerts')
         if args.step == 'valid_heartbeat_timeout':
             insert_measurement(db_con, now, 1900, -100, 94)
         elif args.step == 'invalid_heartbeat_timeout':
