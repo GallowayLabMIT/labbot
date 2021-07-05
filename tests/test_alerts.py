@@ -9,7 +9,7 @@ def insert_measurement(db_con, now, delta_seconds, temp, battery):
     db_con.execute("INSERT INTO temperature_measurements(timestamp,received_timestamp, sensor,measurement,battery_level) VALUES (?,?,?,?,?)",(
         (now - datetime.timedelta(seconds=delta_seconds)).isoformat(),
         (now - datetime.timedelta(seconds=delta_seconds)).isoformat(),
-        0,
+        1,
         temp,
         battery
     ))
