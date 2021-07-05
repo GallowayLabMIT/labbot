@@ -10,7 +10,11 @@ import typing
 import sqlite3
 import secrets
 import datetime
+import collections
+import functools
 import time
+
+from typing import List
 
 
 class MonnitGatewayMessage(BaseModel):
@@ -48,6 +52,9 @@ class MonnitMessage(BaseModel):
     gatewayMessage: MonnitGatewayMessage
     sensorMessages: typing.List[MonnitSensorMessage]
 
+Measurement = collections.namedtuple("Measurement", 'timestamp, measurement')
+SensorStatus = collections.namedtuple('SensorStatus', 'overall, measurements')
+
 module_config = {}
 
 loader = ModuleLoader()
@@ -65,6 +72,7 @@ def on_message(client, userdata, msg):
             datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "receive:request"
         ))
+    db_con.close()
     if msg.topic == 'status/request':
         update_status()
 
@@ -110,7 +118,8 @@ def register_module(config):
         ''')
         db_con.execute('''
         CREATE TABLE IF NOT EXISTS temperature_measurements (
-            datetime text,
+            timestamp text,
+            received_timestamp text,
             sensor integer NOT NULL,
             measurement real NOT NULL,
             battery_level real NOT NULL,
@@ -120,7 +129,7 @@ def register_module(config):
         ''')
         db_con.execute('''
         CREATE TABLE IF NOT EXISTS alarm_measurements (
-            datetime text,
+            timestamp text,
             sensor integer NOT NULL,
             measurement real NOT NULL,
             FOREIGN KEY (sensor)
@@ -142,11 +151,11 @@ def register_module(config):
             initial_timestamp text NOT NULL,
             last_timestamp text NOT NULL,
             inflight BOOLEAN NOT NULL CHECK (inflight IN (0, 1)),
-            silenced BOOLEAN NOT NULL CHECK (silenced IN (0, 1)),
             FOREIGN KEY (sensor)
                 REFERENCES sensors (sensor)
         );
         ''')
+    db_con.close()
     return loader
 
 imonnit_security = HTTPBasic()
@@ -174,13 +183,15 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
             cursor.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (s_message.sensorName,))
             sensor_id = cursor.fetchone()[0]
             db_con.execute(
-                "INSERT INTO temperature_measurements(datetime,sensor,measurement,battery_level) VALUES (?,?,?,?)",(
+                "INSERT INTO temperature_measurements(timestamp,received_timestamp, sensor,measurement,battery_level) VALUES (?,?,?,?,?)",(
                 datetime.datetime.fromisoformat(s_message.messageDate + '+00:00').isoformat(),
+                datetime.datetime.now(datetime.timezone.utc).isoformat(),
                 sensor_id,
                 float(s_message.dataValue),
                 float(s_message.batteryLevel)
             ))
             cursor.close()
+    db_con.close()
     update_status()
     return {'success': True}
 
@@ -216,25 +227,146 @@ def check_status() -> dict:
         sensor_status[sensor] = 0
         cursor.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (sensor,))
         sensor_id = cursor.fetchone()
+
         if sensor_id is not None:
-            cursor.execute("SELECT datetime, measurement FROM temperature_measurements WHERE sensor=? ORDER BY datetime DESC", (sensor_id[0],))
-            out_of_range = True
-            nonzero_entries = False
+            cursor.execute("SELECT timestamp, measurement FROM temperature_measurements WHERE sensor=? ORDER BY timestamp DESC", (sensor_id[0],))
+            # Collect sensor readings. Ensure that we always take at least one measurement, and take until we are beyond the heartbeat limit
+            measurements : List[Measurement] = []
+            now = datetime.datetime.now(datetime.timezone.utc)
+            heartbeat_cutoff = now - datetime.timedelta(seconds=limits['heartbeat_timeout_sec'])
+            alarm_cutoff = now - datetime.timedelta(seconds=limits['time_to_alarm_sec'])
             for row in cursor:
-                delta = datetime.datetime.now(datetime.timezone.utc) - datetime.datetime.fromisoformat(row[0])
-                if delta.seconds > limits['time_to_alarm_sec']:
-                    # We're no longer within the alarm period
+                cur_m = Measurement(timestamp=datetime.datetime.fromisoformat(row[0]), measurement=row[1])
+                measurements.append(cur_m)
+                if cur_m.timestamp < heartbeat_cutoff:
                     break
-                nonzero_entries = True
-                # Otherwise, AND the current alarm status. We are out of range if all entries in the time span are out of range
-                out_of_range = out_of_range and (row[1] > limits['temperature_limit'])
-        if not nonzero_entries:
-            sensor_status[sensor] = 1
-        elif out_of_range:
-            sensor_status[sensor] = 2
-        module_config['logger'](f'Sensor {sensor}: nonzero: {nonzero_entries}, out_of_range: {out_of_range}, status: {sensor_status[sensor]}')
+            
+            num_in_heartbeat_interval = sum([measurement.timestamp > heartbeat_cutoff for measurement in measurements])
+            alarm_measurements = [m for m in measurements if m.timestamp > alarm_cutoff]
+            last_measurement_bad = measurements[-1].measurement > limits['temperature_limit']
+            good_readings_in_alarm_tspan = sum(m.measurement < limits['temperature_limit'] for m in alarm_measurements)
+
+            # if last measurement is bad and there are no good readings in alarm limit, alarm
+            overall_status = 0
+            if last_measurement_bad and good_readings_in_alarm_tspan == 0:
+                overall_status = 2
+            elif num_in_heartbeat_interval == 0:
+                overall_status = 1
+            sensor_status[sensor] = SensorStatus(overall=overall_status, measurements=measurements)
+        module_config['logger'](f'Sensor {sensor}: {sensor_status[sensor]}')
+    cursor.close()
+    db_con.close()
     return sensor_status
 
+BASE_ALERT_MESSAGE = {
+	"blocks": [
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "{at_channel} Sensor *{sensor_name}* {status_phrase}!\t<{home_tab_url}|View dashboard>"
+			}
+		},
+		{
+			"type": "section",
+			"fields": [
+				{
+					"type": "mrkdwn",
+                    # TODO: actually fill in this stuff
+					"text": "*Last temperature:*\n{readings}"
+				},
+				{
+					"type": "mrkdwn",
+					"text": "{is_resolved}\n{resolved_reading}"
+				}
+			]
+		}
+	]
+}
+
+def measurement_to_str(measurement: Measurement):
+    return f'{measurement.measurement}C _(<!date^{measurement.timestamp.timestamp()}^{{time}})_'
+
+def build_alert_message(sensor_name: str, sensor_status: SensorStatus, old_status: int):
+    message = BASE_ALERT_MESSAGE.deepcopy()
+    if sensor_status.overall != old_status:
+        # Alert is over
+        message['blocks'][0]['text']['text'] = message['blocks'][0]['text']['text'].format(
+            at_channel='',
+            sensor_name=sensor_name,
+            status_phrase='was alarming.' if old_status == 2 else 'previously missed heartbeat check-ins.',
+            home_tab_url=module_config['home_tab_url']
+        )
+        message['blocks'][1]['fields'][0]['text'] = message['blocks'][1]['fields'][0]['text'].format(
+            readings='\n'.join([measurement_to_str(m) for m in sensor_status.measurements[:-1]])
+        )
+        message['blocks'][1]['fields'][1]['text'] = message['blocks'][1]['fields'][1]['text'].format(
+            is_resolved='*Resolved by:*',
+            resolved_reading = measurement_to_str(sensor_status.measurements[-1])
+        )
+    else:
+        message['blocks'][0]['text']['text'] = message['blocks'][0]['text']['text'].format(
+            at_channel='' if sensor_status.overall == 1 else '<!channel>',
+            sensor_name=sensor_name,
+            status_phrase='is alarming!' if sensor_status.overall == 2 else 'is missing heartbeat check-ins!',
+            home_tab_url=module_config['home_tab_url']
+        )
+        message['blocks'][1]['fields'][0]['text'] = message['blocks'][1]['fields'][0]['text'].format(
+            readings='\n'.join([measurement_to_str(m) for m in sensor_status.measurements])
+        )
+        message['blocks'][1]['fields'][1]['text'] = message['blocks'][1]['fields'][1]['text'].format(
+            is_resolved='',
+            resolved_reading = ''
+        )
+    return message
+
+def slack_alert(db_con, sensor_name: str, sensor_status: SensorStatus) -> None:
+    """
+    Given a sensor name and the updated sensor status, creates or updates
+    the status message.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    with db_con:
+        sensor_id = db_con.execute("SELECT id FROM sensors WHERE name=?;", (sensor_name,)).fetchone()[0]
+        # Check to see if there is an inflight item
+        inflight = db_con.execute("SELECT id, status, slack_ts FROM alerts WHERE sensor=? AND inflight=1 LIMIT 1").fetchone()
+        if inflight is not None:
+            # Check if we need to finalize this alert.
+            if inflight[1] != sensor_status.overall:
+                module_config['slack_client'].chat_update(
+                    channel='#labbot_debug',
+                    ts=inflight[2],
+                    blocks=build_alert_message(sensor_name, sensor_status, inflight[1])
+                )
+                db_con.execute("UPDATE alerts SET last_timestamp=?, inflight=0 WHERE id=?", (
+                    now,
+                    inflight[0]
+                ))
+            else:
+                # Just update the alert
+                module_config['slack_client'].chat_update(
+                    channel='#labbot_debug',
+                    ts=inflight[2],
+                    blocks=build_alert_message(sensor_name, sensor_status, inflight[1])
+                )
+                db_con.execute("UPDATE alerts SET last_timestamp=? WHERE id=?", (
+                    datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                    inflight[0]
+                ))
+        if (inflight is None and sensor_status.overall != 0) or (inflight is not None and inflight[1] != sensor_status.overall):
+            # Start new alert
+            new_alert = module_config['slack_client'].chat_postMessage(
+                channel='#labbot_debug',
+                blocks=build_alert_message(sensor_name, sensor_status, sensor_status.overall)
+            )
+            db_con.execute("INSERT INTO alerts(sensor, status, slack_ts, initial_timestamp, last_timestamp, inflight) VALUES (?,?,?,?,?,1)",(
+                sensor_id,
+                sensor_status.overall,
+                new_alert.ts,
+                now,
+                now,
+            ))
+        
 def update_status():
     status_dict = check_status()
     overall_status = min(status_dict.values())
@@ -248,16 +380,8 @@ def update_status():
     module_config['hometab_update']()
 
     for k, v in status_dict.items():
-        if v == 1:
-            module_config['slack_client'].chat_postMessage(
-                channel='#labbot_debug',
-                text=f'Sensor {k} missed its heartbeat check-in!'
-            )
-        if v == 2:
-            module_config['slack_client'].chat_postMessage(
-                channel='#labbot_debug',
-                text=f'<!channel> Sensor {k} is alarming!'
-            )
+        slack_alert(db_con, k, v)
+    db_con.close()
 
 @loader.timer
 def status_updates(_):
@@ -278,32 +402,6 @@ BASE_HOME_TAB_MODEL = [
     }
 ]
 
-alert_message = {
-	"blocks": [
-		{
-			"type": "section",
-			"text": {
-				"type": "mrkdwn",
-                # TODO: make the home tab adjustable
-				"text": "Sensor *Elsa* is alarming!\t<slack://app?team=TPT6YBE56&id=A017JCZ8VK7|View dashboard>"
-			}
-		},
-		{
-			"type": "section",
-			"fields": [
-				{
-					"type": "mrkdwn",
-                    # TODO: actually fill in this stuff
-					"text": "*Last temperature:*\n-77C _(<!date^123123123^{time}>)_"
-				},
-				{
-					"type": "mrkdwn",
-					"text": "*Number of recent check-ins:*\n2"
-				}
-			]
-		}
-	]
-}
 
 
 # -- https://stackoverflow.com/a/5333305 -- CC BY-SA 2.5 ----------------------------------
@@ -361,11 +459,12 @@ def dev_tools_home_tab(user):
     db_con = sqlite3.connect('sensors.db')
     for id, name in db_con.execute("SELECT id, name FROM sensors WHERE type=0"):
         cursor = db_con.cursor()
-        cursor.execute("SELECT datetime, measurement FROM temperature_measurements WHERE sensor=? ORDER BY datetime DESC", (id,))
+        cursor.execute("SELECT timestamp, measurement FROM temperature_measurements WHERE sensor=? ORDER BY timestamp DESC", (id,))
         row = cursor.fetchone()
         if row is not None:
             timestamp = datetime.datetime.fromisoformat(row[0])
             temp = float(row[1])
             home_tab_blocks.append(generate_sensor_status_item(name, status_dict[name], timestamp, temp))
         cursor.close()
+    db_con.close()
     return home_tab_blocks
