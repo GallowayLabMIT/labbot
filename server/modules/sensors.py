@@ -11,6 +11,7 @@ import sqlite3
 import secrets
 import datetime
 import collections
+import copy
 import functools
 import time
 
@@ -291,7 +292,7 @@ def measurement_to_str(measurement: Measurement):
     return f'{measurement.measurement}C _(<!date^{measurement.timestamp.timestamp()}^{{time}})_'
 
 def build_alert_message(sensor_name: str, sensor_status: SensorStatus, old_status: int):
-    message = BASE_ALERT_MESSAGE.deepcopy()
+    message = copy.deepcopy(BASE_ALERT_MESSAGE)
     if sensor_status.overall != old_status:
         # Alert is over
         message['blocks'][0]['text']['text'] = message['blocks'][0]['text']['text'].format(
