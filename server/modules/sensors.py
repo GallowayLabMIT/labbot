@@ -239,18 +239,22 @@ def check_status() -> dict:
                 measurements.append(cur_m)
                 if cur_m.timestamp < heartbeat_cutoff:
                     break
-            
-            num_in_heartbeat_interval = sum([measurement.timestamp > heartbeat_cutoff for measurement in measurements])
-            alarm_measurements = [m for m in measurements if m.timestamp > alarm_cutoff]
-            last_measurement_bad = measurements[-1].measurement > limits['temperature_limit']
-            good_readings_in_alarm_tspan = sum(m.measurement < limits['temperature_limit'] for m in alarm_measurements)
 
-            # if last measurement is bad and there are no good readings in alarm limit, alarm
-            overall_status = 0
-            if last_measurement_bad and good_readings_in_alarm_tspan == 0:
-                overall_status = 2
-            elif num_in_heartbeat_interval == 0:
-                overall_status = 1
+            
+            if len(measurements) > 0:
+                num_in_heartbeat_interval = sum([measurement.timestamp > heartbeat_cutoff for measurement in measurements])
+                alarm_measurements = [m for m in measurements if m.timestamp > alarm_cutoff]
+                last_measurement_bad = measurements[-1].measurement > limits['temperature_limit']
+                good_readings_in_alarm_tspan = sum(m.measurement < limits['temperature_limit'] for m in alarm_measurements)
+
+                # if last measurement is bad and there are no good readings in alarm limit, alarm
+                overall_status = 0
+                if last_measurement_bad and good_readings_in_alarm_tspan == 0:
+                    overall_status = 2
+                elif num_in_heartbeat_interval == 0:
+                    overall_status = 1
+            else:
+                overall_status = 0
             sensor_status[sensor] = SensorStatus(overall=overall_status, measurements=measurements)
             module_config['logger'](f'Sensor {sensor}: {sensor_status[sensor]}')
     cursor.close()
