@@ -245,7 +245,7 @@ def check_status_alerts(db_con:sqlite3.Connection, perform_hometab_update:bool=T
             if len(measurements) > 0:
                 num_in_heartbeat_interval = sum([measurement.timestamp > heartbeat_cutoff for measurement in measurements])
                 alarm_measurements = [m for m in measurements if m.timestamp > alarm_cutoff]
-                last_measurement_bad = measurements[-1].measurement > limits['temperature_limit']
+                last_measurement_bad = measurements[0].measurement > limits['temperature_limit']
                 good_readings_in_alarm_tspan = sum(m.measurement < limits['temperature_limit'] for m in alarm_measurements)
 
                 # if last measurement is bad and there are no good readings in alarm limit, alarm
@@ -283,7 +283,7 @@ BASE_ALERT_MESSAGE = [
         "type": "section",
         "text": {
             "type": "mrkdwn",
-            "text": "{at_channel} Sensor *{sensor_name}* {status_phrase}!\t<{home_tab_url}|View dashboard>"
+            "text": "{at_channel} Sensor *{sensor_name}* {status_phrase}\t<{home_tab_url}|View dashboard>"
         }
     },
     {
@@ -303,7 +303,7 @@ BASE_ALERT_MESSAGE = [
 ]
 
 def measurement_to_str(measurement: Measurement):
-    return f'{measurement.measurement}C _(<!date^{measurement.timestamp.timestamp()}^{{time}})_'
+    return f'{measurement.measurement}C _(<!date^{measurement.timestamp.timestamp()}^{{time}}>)_'
 
 def build_alert_message(sensor_name: str, sensor_status: SensorStatus, old_status: int):
     message = copy.deepcopy(BASE_ALERT_MESSAGE)
@@ -316,11 +316,11 @@ def build_alert_message(sensor_name: str, sensor_status: SensorStatus, old_statu
             home_tab_url=module_config['home_tab_url']
         )
         message[1]['fields'][0]['text'] = message[1]['fields'][0]['text'].format(
-            readings='\n'.join([measurement_to_str(m) for m in sensor_status.measurements[:-1]])
+            readings='\n'.join([measurement_to_str(m) for m in sensor_status.measurements[1:]])
         )
         message[1]['fields'][1]['text'] = message[1]['fields'][1]['text'].format(
             is_resolved='*Resolved by:*',
-            resolved_reading = measurement_to_str(sensor_status.measurements[-1])
+            resolved_reading = measurement_to_str(sensor_status.measurements[0])
         )
     else:
         message[0]['text']['text'] = message[0]['text']['text'].format(
