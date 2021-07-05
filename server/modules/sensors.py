@@ -361,12 +361,10 @@ def slack_alert(db_con, sensor_name: str, sensor_status: SensorStatus) -> None:
                 channel='#labbot_debug',
                 blocks=build_alert_message(sensor_name, sensor_status, sensor_status.overall)
             )
-            print(new_alert)
-            print(new_alert['ts'])
             db_con.execute("INSERT INTO alerts(sensor, status, slack_ts, initial_timestamp, last_timestamp, inflight) VALUES (?,?,?,?,?,1)",(
                 sensor_id,
                 sensor_status.overall,
-                new_alert.ts,
+                new_alert['ts'],
                 now,
                 now,
             ))
