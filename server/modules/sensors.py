@@ -262,31 +262,29 @@ def check_status() -> dict:
     db_con.close()
     return sensor_status
 
-BASE_ALERT_MESSAGE = {
-	"blocks": [
-		{
-			"type": "section",
-			"text": {
-				"type": "mrkdwn",
-				"text": "{at_channel} Sensor *{sensor_name}* {status_phrase}!\t<{home_tab_url}|View dashboard>"
-			}
-		},
-		{
-			"type": "section",
-			"fields": [
-				{
-					"type": "mrkdwn",
-                    # TODO: actually fill in this stuff
-					"text": "*Last temperature:*\n{readings}"
-				},
-				{
-					"type": "mrkdwn",
-					"text": "{is_resolved}\n{resolved_reading}"
-				}
-			]
-		}
-	]
-}
+BASE_ALERT_MESSAGE = [
+    {
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": "{at_channel} Sensor *{sensor_name}* {status_phrase}!\t<{home_tab_url}|View dashboard>"
+        }
+    },
+    {
+        "type": "section",
+        "fields": [
+            {
+                "type": "mrkdwn",
+                # TODO: actually fill in this stuff
+                "text": "*Last temperature:*\n{readings}"
+            },
+            {
+                "type": "mrkdwn",
+                "text": "{is_resolved}\n{resolved_reading}"
+            }
+        ]
+    }
+]
 
 def measurement_to_str(measurement: Measurement):
     return f'{measurement.measurement}C _(<!date^{measurement.timestamp.timestamp()}^{{time}})_'
@@ -295,30 +293,30 @@ def build_alert_message(sensor_name: str, sensor_status: SensorStatus, old_statu
     message = copy.deepcopy(BASE_ALERT_MESSAGE)
     if sensor_status.overall != old_status:
         # Alert is over
-        message['blocks'][0]['text']['text'] = message['blocks'][0]['text']['text'].format(
+        message[0]['text']['text'] = message[0]['text']['text'].format(
             at_channel='',
             sensor_name=sensor_name,
             status_phrase='was alarming.' if old_status == 2 else 'previously missed heartbeat check-ins.',
             home_tab_url=module_config['home_tab_url']
         )
-        message['blocks'][1]['fields'][0]['text'] = message['blocks'][1]['fields'][0]['text'].format(
+        message[1]['fields'][0]['text'] = message[1]['fields'][0]['text'].format(
             readings='\n'.join([measurement_to_str(m) for m in sensor_status.measurements[:-1]])
         )
-        message['blocks'][1]['fields'][1]['text'] = message['blocks'][1]['fields'][1]['text'].format(
+        message[1]['fields'][1]['text'] = message[1]['fields'][1]['text'].format(
             is_resolved='*Resolved by:*',
             resolved_reading = measurement_to_str(sensor_status.measurements[-1])
         )
     else:
-        message['blocks'][0]['text']['text'] = message['blocks'][0]['text']['text'].format(
+        message[0]['text']['text'] = message[0]['text']['text'].format(
             at_channel='' if sensor_status.overall == 1 else '<!channel>',
             sensor_name=sensor_name,
             status_phrase='is alarming!' if sensor_status.overall == 2 else 'is missing heartbeat check-ins!',
             home_tab_url=module_config['home_tab_url']
         )
-        message['blocks'][1]['fields'][0]['text'] = message['blocks'][1]['fields'][0]['text'].format(
+        message[1]['fields'][0]['text'] = message[1]['fields'][0]['text'].format(
             readings='\n'.join([measurement_to_str(m) for m in sensor_status.measurements])
         )
-        message['blocks'][1]['fields'][1]['text'] = message['blocks'][1]['fields'][1]['text'].format(
+        message[1]['fields'][1]['text'] = message[1]['fields'][1]['text'].format(
             is_resolved='',
             resolved_reading = ''
         )
