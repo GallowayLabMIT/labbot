@@ -73,10 +73,9 @@ def on_message(client, userdata, msg):
             datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "receive:request"
         ))
-    db_con.close()
     if msg.topic == 'status/request':
-        update_status()
-
+        check_status_alerts(db_con)
+    db_con.close()
 
 def register_module(config):
     # Override defaults if present 
@@ -192,8 +191,8 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
                 float(s_message.batteryLevel)
             ))
             cursor.close()
+    check_status_alerts(db_con)
     db_con.close()
-    update_status()
     return {'success': True}
 
 @loader.timer
@@ -213,17 +212,18 @@ def poll_mqtt(slack_client):
             module_config['logger'](f'Got exception while reconnecting to MQTT: {e}')
     return 5
 
-
-def check_status() -> dict:
+def check_status_alerts(db_con:sqlite3.Connection, perform_hometab_update:bool=True) -> dict:
     """
+    Given a database connection, checks the current status, returning the status dictionary
+    and updating Slack alerts and MQTT as necessary.
+
     Checks the status of all sensors, comparing to the built in limits.
     These limits take the form of a temperature level and a TTA, time to alarm.
     Each also has a heartbeat_timeout, which is the time in seconds that have elapsed
-    since the last heartbeat.
     """
-    db_con = sqlite3.connect('sensors.db')
+
+    status_dict = {}
     cursor = db_con.cursor()
-    sensor_status = {}
     for sensor, limits in module_config['sensor_limits'].items():
         cursor.execute("SELECT id FROM sensors WHERE type=0 AND name=?;", (sensor,))
         sensor_id = cursor.fetchone()
@@ -254,13 +254,29 @@ def check_status() -> dict:
                     overall_status = 2
                 elif num_in_heartbeat_interval == 0:
                     overall_status = 1
+                module_config['logger'](f'Sensor {sensor}: num_in_heartbeat{num_in_heartbeat_interval}, last_measurement_bad:{last_measurement_bad}, good_readings_in_alarm_num:{good_readings_in_alarm_tspan}')
             else:
                 overall_status = 0
-            sensor_status[sensor] = SensorStatus(overall=overall_status, measurements=measurements)
-            module_config['logger'](f'Sensor {sensor}: {sensor_status[sensor]}')
+            status_dict[sensor] = SensorStatus(overall=overall_status, measurements=measurements)
+            module_config['logger'](f'Sensor {sensor}: {status_dict[sensor]}')
     cursor.close()
-    db_con.close()
-    return sensor_status
+
+    overall_status = max([v.overall for v in status_dict.values()]) if len(status_dict) > 0 else 0
+    with db_con:
+        db_con.execute("INSERT INTO mqtt_log(timestamp, action) VALUES (?,?)",(
+            datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "send:status/current:{}".format(overall_status)
+        ))
+    mqtt_client.publish('status/current', str(overall_status))
+
+    for k, v in status_dict.items():
+        slack_alert(db_con, k, v)
+
+    if perform_hometab_update:
+        module_config['hometab_update']()
+    
+    return status_dict
+
 
 BASE_ALERT_MESSAGE = [
     {
@@ -369,25 +385,11 @@ def slack_alert(db_con, sensor_name: str, sensor_status: SensorStatus) -> None:
                 now,
             ))
         
-def update_status():
-    status_dict = check_status()
-    overall_status = max([v.overall for v in status_dict.values()]) if len(status_dict) > 0 else 0
-    db_con = sqlite3.connect('sensors.db')
-    with db_con:
-        db_con.execute("INSERT INTO mqtt_log(timestamp, action) VALUES (?,?)",(
-            datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "send:status/current:{}".format(overall_status)
-        ))
-    mqtt_client.publish('status/current', str(overall_status))
-    module_config['hometab_update']()
-
-    for k, v in status_dict.items():
-        slack_alert(db_con, k, v)
-    db_con.close()
-
 @loader.timer
 def status_updates(_):
-    update_status()
+    db_con = sqlite3.connect('sensors.db')
+    check_status_alerts(db_con)
+    db_con.close()
     return 60 * 5
 
 
@@ -457,8 +459,8 @@ def dev_tools_home_tab(user):
     # Ignores the user, displaying the same thing
     # for everyone
     home_tab_blocks = BASE_HOME_TAB_MODEL.copy()
-    status_dict = check_status()
     db_con = sqlite3.connect('sensors.db')
+    status_dict = check_status_alerts(db_con, False) # prevent infinite loop in home tab
     for id, name in db_con.execute("SELECT id, name FROM sensors WHERE type=0"):
         cursor = db_con.cursor()
         cursor.execute("SELECT timestamp, measurement FROM temperature_measurements WHERE sensor=? ORDER BY timestamp DESC", (id,))
