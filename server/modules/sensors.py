@@ -328,7 +328,7 @@ def slack_alert(db_con, sensor_name: str, sensor_status: SensorStatus) -> None:
     with db_con:
         sensor_id = db_con.execute("SELECT id FROM sensors WHERE name=?;", (sensor_name,)).fetchone()[0]
         # Check to see if there is an inflight item
-        inflight = db_con.execute("SELECT id, status, slack_ts FROM alerts WHERE sensor=? AND inflight=1 LIMIT 1").fetchone()
+        inflight = db_con.execute("SELECT id, status, slack_ts FROM alerts WHERE sensor=? AND inflight=1 LIMIT 1", (sensor_name,)).fetchone()
         if inflight is not None:
             # Check if we need to finalize this alert.
             if inflight[1] != sensor_status.overall:
