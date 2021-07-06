@@ -268,11 +268,11 @@ def check_status_alerts(db_con:sqlite3.Connection, perform_hometab_update:bool=T
                     overall_status = 2
                 elif num_in_heartbeat_interval == 0:
                     overall_status = 1
-                module_config['logger'](f'Sensor {sensor}: num_in_heartbeat{num_in_heartbeat_interval}, last_measurement_bad:{last_measurement_bad}, good_readings_in_alarm_num:{good_readings_in_alarm_tspan}')
+                #module_config['logger'](f'Sensor {sensor}: num_in_heartbeat{num_in_heartbeat_interval}, last_measurement_bad:{last_measurement_bad}, good_readings_in_alarm_num:{good_readings_in_alarm_tspan}')
             else:
                 overall_status = 0
             status_dict[sensor] = SensorStatus(overall=overall_status, measurements=measurements)
-            module_config['logger'](f'Sensor {sensor}: {status_dict[sensor]}')
+            #module_config['logger'](f'Sensor {sensor}: {status_dict[sensor]}')
     cursor.close()
 
     overall_status = max([v.overall for v in status_dict.values()]) if len(status_dict) > 0 else 0
