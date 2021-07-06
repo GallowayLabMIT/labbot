@@ -94,6 +94,8 @@ def register_module(config):
         raise RuntimeError("Expected to be passed a persistant client ID ('client_id') in key 'mqtt'!")
     if 'sensor_limits' not in module_config:
         raise RuntimeError("Expected to have sensor critical levels set in key 'sensor_limits'!")
+    if 'channel_id' not in module_config:
+        raise RuntimeError("Expected to have channel id set in key 'channel_id'!")
     
     
     # Attempt to connect to MQTT
@@ -352,7 +354,7 @@ def slack_alert(db_con, sensor_name: str, sensor_status: SensorStatus) -> None:
             # Check if we need to finalize this alert.
             if inflight[1] != sensor_status.overall:
                 module_config['slack_client'].chat_update(
-                    channel='#labbot_debug',
+                    channel=module_config['channel_id'],
                     ts=inflight[2],
                     blocks=build_alert_message(sensor_name, sensor_status, inflight[1])
                 )
@@ -363,7 +365,7 @@ def slack_alert(db_con, sensor_name: str, sensor_status: SensorStatus) -> None:
             else:
                 # Just update the alert
                 module_config['slack_client'].chat_update(
-                    channel='#labbot_debug',
+                    channel=module_config['channel_id'],
                     ts=inflight[2],
                     blocks=build_alert_message(sensor_name, sensor_status, inflight[1])
                 )
@@ -374,7 +376,7 @@ def slack_alert(db_con, sensor_name: str, sensor_status: SensorStatus) -> None:
         if (inflight is None and sensor_status.overall != 0) or (inflight is not None and inflight[1] != sensor_status.overall):
             # Start new alert
             new_alert = module_config['slack_client'].chat_postMessage(
-                channel='#labbot_debug',
+                channel=module_config['channel_id'],
                 blocks=build_alert_message(sensor_name, sensor_status, sensor_status.overall)
             )
             db_con.execute("INSERT INTO alerts(sensor, status, slack_ts, initial_timestamp, last_timestamp, inflight) VALUES (?,?,?,?,?,1)",(
