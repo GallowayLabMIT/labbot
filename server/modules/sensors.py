@@ -305,7 +305,7 @@ BASE_ALERT_MESSAGE = [
 ]
 
 def measurement_to_str(measurement: Measurement):
-    return f'{measurement.measurement}C _(<!date^{int(measurement.timestamp.timestamp())}^{{time}}>)_'
+    return f'{measurement.measurement}C _(<!date^{int(measurement.timestamp.timestamp())}^{{date_short_pretty}}, {{time}}|{measurement.timestamp.isoformat()}>)_'
 
 def build_alert_message(sensor_name: str, sensor_status: SensorStatus, old_status: int):
     message = copy.deepcopy(BASE_ALERT_MESSAGE)

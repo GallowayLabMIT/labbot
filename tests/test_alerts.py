@@ -27,9 +27,9 @@ if __name__ == '__main__':
         elif args.step == 'invalid_heartbeat_timeout':
             insert_measurement(db_con, now, 1900, -50, 94)
         elif args.step == 'valid_stale':
-            insert_measurement(db_con, now, 1200, -100, 94)
+            insert_measurement(db_con, now, 1400, -100, 94)
         elif args.step == 'invalid_stale':
-            insert_measurement(db_con, now, 1200, -50, 94)
+            insert_measurement(db_con, now, 1400, -50, 94)
         elif args.step == 'valid':
             insert_measurement(db_con, now, 800, -100, 94)
             insert_measurement(db_con, now, 500, -100, 94)
