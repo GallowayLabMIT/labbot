@@ -373,7 +373,11 @@ def slack_alert(db_con, sensor_name: str, sensor_status: SensorStatus) -> None:
                     datetime.datetime.now(datetime.timezone.utc).isoformat(),
                     inflight[0]
                 ))
-        if (inflight is None and sensor_status.overall != 0) or (inflight is not None and inflight[1] != sensor_status.overall):
+        if sensor_status.overall == 0:
+            # We're done here
+            return
+
+        if inflight is None or (inflight is not None and inflight[1] != sensor_status.overall):
             # Start new alert
             new_alert = module_config['slack_client'].chat_postMessage(
                 channel=module_config['channel_id'],
