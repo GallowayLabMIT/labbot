@@ -157,6 +157,18 @@ def register_module(config):
                 REFERENCES sensors (sensor)
         );
         ''')
+        db_con.execute('''
+        CREATE TABLE IF NOT EXISTS battery_alerts (
+            id integer PRIMARY KEY,
+            sensor integer NOT NULL,
+            slack_ts text,
+            initial_timestamp text NOT NULL,
+            last_timestamp text NOT NULL,
+            inflight BOOLEAN NOT NULL CHECK (inflight IN (0, 1)),
+            FOREIGN KEY (sensor)
+                REFERENCES sensors (sensor)
+        );
+        ''')
     db_con.close()
     return loader
 
@@ -294,7 +306,7 @@ BASE_ALERT_MESSAGE = [
             {
                 "type": "mrkdwn",
                 # TODO: actually fill in this stuff
-                "text": "*Last temperature:*\n{readings}"
+                "text": "*Recent measurements:*\n{readings}"
             },
             {
                 "type": "mrkdwn",
