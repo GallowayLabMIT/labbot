@@ -4,6 +4,7 @@ import sqlite3
 
 parser = argparse.ArgumentParser()
 parser.add_argument('step', choices=('valid_heartbeat_timeout', 'invalid_heartbeat_timeout', 'invalid_stale', 'valid_stale', 'valid', 'invalid', 'insert_valid', 'insert_invalid'))
+parser.add_argument('--wipe', action='store_true')
 
 def insert_measurement(db_con, now, delta_seconds, temp, battery):
     db_con.execute("INSERT INTO temperature_measurements(timestamp,received_timestamp, sensor,measurement,battery_level) VALUES (?,?,?,?,?)",(
@@ -19,7 +20,7 @@ if __name__ == '__main__':
     db_con = sqlite3.connect('sensors.db')
     now = datetime.datetime.now(datetime.timezone.utc)
     with db_con:
-        if not args.step.startswith('insert'):
+        if args.wipe:
             db_con.execute('DELETE FROM temperature_measurements')
             db_con.execute('DELETE FROM alerts')
         if args.step == 'valid_heartbeat_timeout':
