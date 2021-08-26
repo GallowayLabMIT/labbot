@@ -15,23 +15,53 @@ Currently, there are two indicators: 'zip' ('zip.txt') and 'nozip.txt' ('nozip.t
 which will unconditionally zip the containing folder or never zip it.
 """
 import argparse
+import binascii
 from datetime import date
 import json
 import os
 from pathlib import Path
 import re
+import shutil
 import sys
 import zipfile
 
 parser = argparse.ArgumentParser(
         description='Configured to automatically zip files based on elapsed time')
 parser.add_argument('--config', type=Path, default=Path('~/.zipimages.json').expanduser())
+parser.add_argument('--retries', type=int, default=5)
+parser.add_argument('--verbose', action='store_true', default=False)
 
 def print_error_usage(error: str):
     """Prints an error to standard error and exits with the usage statement"""
     print(error, file=sys.stderr)
     parser.print_usage(sys.stderr)
     sys.exit(1)
+
+def validate_zip_file(zipfilename: Path, basedir: Path, verbose=False) -> bool:
+    """
+    Validates that the contents of a zip file matches the
+    files within basedir.
+    """
+    with zipfile.ZipFile(zipfilename, 'r') as current_zip:
+        # Check all headers
+        invalid_file = current_zip.testzip()
+        if invalid_file is not None:
+            print(f'Invalid file found in {str(zipfilename)}: {invalid_file}!')
+            return False
+        # Check that file hashes match on-disk
+        for inner_file in current_zip.infolist():
+            if verbose:
+                print(f'Validating {inner_file.filename}: ', end='')
+            zip_crc = inner_file.CRC
+            with open(basedir / inner_file.filename, 'rb') as filesystem_file:
+                filesystem_crc = binascii.crc32(filesystem_file.read()) & 0xffffffff
+            if verbose:
+                print(f'zip:{zip_crc}, filesystem:{zip_crc}')
+            if zip_crc != filesystem_crc:
+                print(
+                    f'File {str(basedir / inner_file.filename)} does not match compressed file in {str(zipfilename)}')
+                return False
+    return True
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -53,12 +83,13 @@ if __name__ == '__main__':
             Path(d).expanduser().resolve(strict=True) for d in config['monitor_locations']]
 
     # Actually start processing
-    date_re = r'^(\d{4}([._-]?)\d{2}\2\d{2})'
     current_zip = None
+    zip_filename = Path()
     for start_root in monitor_locations:
         for root, dirs, files in os.walk(start_root, topdown=True, followlinks=True):
             # Skip processing this folder and its descendents if it contains the nozip marker
-            if config['indicators']['nozip'] in files:
+            # and we are not processing a zip file
+            if config['indicators']['nozip'] in files and current_zip is None:
                 del dirs[:]
                 continue
 
@@ -67,8 +98,12 @@ if __name__ == '__main__':
                 # Do zip processing. First, check if we are outside the zip base path
                 if base_path not in dirpath.parents:
                     current_zip.close()
+                    print('validating...', end='')
+                    if not validate_zip_file(zip_filename, base_path, args.verbose):
+                        print_error_usage('Validation failed.')
                     current_zip = None
                     print('done!')
+                    shutil.rmtree(base_path)
 
             # If we aren't processing a zip file yet, do the zip check
             if current_zip is None:
@@ -84,17 +119,34 @@ if __name__ == '__main__':
                 if (config['indicators']['zip'] in files or
                     (date.today() - folder_date).days > config['zip_delay_days']):
 
-                    print(f"Creating zip file {str(dirpath.parent / (dirpath.name + '.zip'))}...",
+                    zip_filename = dirpath.parent / (dirpath.name + '.zip')
+                    print(f"Creating zip file {str(zip_filename)}...",
                           end='')
-                    current_zip = zipfile.ZipFile(dirpath.parent / (dirpath.name + '.zip'), 'w')
+                    current_zip = zipfile.ZipFile(zip_filename, 'w')
                     base_path = dirpath
 
             if current_zip is not None:
                 for filename in files:
                     full_filename = dirpath / filename
-                    current_zip.write(
-                        full_filename,
-                        arcname=full_filename.relative_to(base_path))
+                    num_retries = 0
+                    while num_retries < args.retries:
+                        try:
+                            current_zip.write(
+                                full_filename,
+                                arcname=full_filename.relative_to(base_path))
+                            break
+                        except OSError as e:
+                            print('OS error: {str(e)}. Retrying...')
+                        num_retries += 1
+                    if num_retries == args.retries:
+                        print_error_usage(
+                            'Failed to read file after {args.retries} retries. Exiting :(')
+
         if current_zip is not None:
             current_zip.close()
+            print('validating...', end='')
+            if not validate_zip_file(zip_filename, base_path, args.verbose):
+                print_error_usage('Validation failed.')
+            print('done!')
+            shutil.rmtree(base_path)
             current_zip = None
