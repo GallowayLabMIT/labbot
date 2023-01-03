@@ -65,7 +65,7 @@ label_model = {
             "type": "input",
             "element": {
                 "type": "datepicker",
-                "initial_date": "1990-04-28",
+                "initial_value": "1990-04-28",
                 "placeholder": {
                     "type": "plain_text",
                     "text": "Select a date",
@@ -162,7 +162,7 @@ label_model = {
                 "action_id": "labels-field",
                 "placeholder": {
                     "type": "plain_text",
-                    "text": "",
+                    "text": "pKG_number, description",
                     "emoji": True
                 }
             },
