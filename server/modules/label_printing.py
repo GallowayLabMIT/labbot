@@ -65,7 +65,7 @@ label_model = {
             "type": "input",
             "element": {
                 "type": "datepicker",
-                "initial_value": "1990-04-28",
+                "initial_date": "1990-04-28",
                 "placeholder": {
                     "type": "plain_text",
                     "text": "Select a date",
@@ -201,7 +201,7 @@ def main_tracker(ack, shortcut, client):
 
     # Set the default label date to today
     view_model = build_modal_view()
-    view_model["blocks"][3]["element"]["initial_date"] = now_dt.strftime('%Y-%m-%d')
+    view_model["blocks"][2]["element"]["initial_date"] = now_dt.strftime('%Y-%m-%d')
 
     # Open the view
     client.views_open(
