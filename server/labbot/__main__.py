@@ -281,7 +281,7 @@ bolt_client.client.chat_postMessage(
         text='LabBot shutting down. Bye!')
 
 if restart_flag:
-    os.execv(sys.executable, ['python'] + sys.argv)
+    os.execv(sys.executable, [sys.executable] + sys.argv)
 
 
 
