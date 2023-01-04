@@ -310,48 +310,53 @@ def handle_form_submission(ack, body, client, view):
     if label_type == 'bacterial_stock':
         if not all([len(x) == 2 for x in labels]):
             errors["labels"] = "Input is not a two-column (pKG number, name) CSV!"
-        # Try to convert all to int
-        converted_labels = []
-        for label in labels:
-            try:
-                pKG_num = int(label[0])
-                converted_labels.append((
-                    f'pKG{pKG_num}',
-                    label[1],
-                    f'{date} {initials}',
-                    str(pKG_num)
-                ))
-            except ValueError:
-                errors["labels"] = f"Row {label} has invalid pKG number! This should be an integer!"
-                break
-        labels = converted_labels
+        else:
+            # Try to convert all to int
+            for label in labels:
+                try:
+                    pKG_num = int(label[0])
+                    converted_labels.append((
+                        f'pKG{pKG_num}',
+                        label[1],
+                        f'{date} {initials}',
+                        str(pKG_num)
+                    ))
+                except ValueError:
+                    errors["labels"] = f"Row {label} has invalid pKG number! This should be an integer!"
+                    break
     elif label_type == 'cell_line_stock':
         if not all([len(x) == 3 for x in labels]):
             errors["labels"] = "Input is not a three-column (circle_label, main_label, description) CSV!"
-        converted_labels.append((
-            label[1],
-            label[2],
-            f'{date} {initials}',
-            label[0]
-        ))
+        else:
+            for label in labels:
+                converted_labels.append((
+                    label[1],
+                    label[2],
+                    f'{date} {initials}',
+                    label[0]
+                ))
     elif label_type == 'virus_stock':
         if not all([len(x) == 4 for x in labels]):
             errors["labels"] = "Input is not a four-column (circle_label, main_label, description, volume_uL) CSV!"
-        converted_labels.append((
-            f'{label[1]} ({label[3]} uL)',
-            label[2],
-            f'{date} {initials}',
-            label[0]
-        ))
+        else:
+            for label in labels:
+                converted_labels.append((
+                    f'{label[1]} ({label[3]} uL)',
+                    label[2],
+                    f'{date} {initials}',
+                    label[0]
+                ))
     elif label_type == 'custom':
         if not all([len(x) == 3 for x in labels]):
             errors["labels"] = "Input is not a three-column (circle_label, line1, line2) CSV!"
-        converted_labels.append((
-            label[1],
-            label[2],
-            f'{date} {initials}',
-            label[0]
-        ))
+        else:
+            for label in labels:
+                converted_labels.append((
+                    label[1],
+                    label[2],
+                    f'{date} {initials}',
+                    label[0]
+                ))
     else:
         errors["label_type"] = "Unexpected label type!"
     if len(errors) > 0:
