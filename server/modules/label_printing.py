@@ -52,9 +52,10 @@ label_model = {
         },
         {
             "type": "input",
+            "block_id": "initials",
             "element": {
                 "type": "plain_text_input",
-                "action_id": "initials-field"
+                "action_id": "initials-input"
             },
             "label": {
                 "type": "plain_text",
@@ -64,6 +65,7 @@ label_model = {
         },
         {
             "type": "input",
+            "block_id": "date",
             "element": {
                 "type": "datepicker",
                 "initial_date": "1990-04-28",
@@ -72,7 +74,7 @@ label_model = {
                     "text": "Select a date",
                     "emoji": True
                 },
-                "action_id": "date-field"
+                "action_id": "date-input"
             },
             "label": {
                 "type": "plain_text",
@@ -82,10 +84,11 @@ label_model = {
         },
         {
             "type": "input",
+            "block_id": "num_copies",
             "element": {
                 "type": "number_input",
                 "is_decimal_allowed": False,
-                "action_id": "num_copies-field",
+                "action_id": "num_copies-input",
                 "initial_value": "3",
                 "min_value": "1",
                 "max_value": "10"
@@ -106,6 +109,7 @@ label_model = {
         },
         {
             "type": "input",
+            "block_id": "label_type",
             "element": {
                 "type": "static_select",
                 "placeholder": {
@@ -147,7 +151,7 @@ label_model = {
                         "value": "custom"
                     }
                 ],
-                "action_id": "label_type-field"
+                "action_id": "label_type-input"
             },
             "label": {
                 "type": "plain_text",
@@ -157,10 +161,11 @@ label_model = {
         },
         {
             "type": "input",
+            "block_id": "labels",
             "element": {
                 "type": "plain_text_input",
                 "multiline": True,
-                "action_id": "labels-field",
+                "action_id": "labels-input",
                 "placeholder": {
                     "type": "plain_text",
                     "text": "pKG_number, description",
@@ -249,25 +254,27 @@ def handle_form_submission(ack, body, client, view):
 
     module_config['logger'](view['state']['values'])
     # Perform validation on inputs, e.g. check that the label CSV is well-formed
-    labels = [row for row in csv.reader(view['state']['values']['labels-field'].split('\n'))]
+    labels = [row for row in csv.reader(
+        view['state']['values']['labels']['labels-input']['value'].split('\n')
+    )]
 
-    label_type = view['state']['values']['label_type-field']
-    date = view['state']['values']['date-field']
-    initials = view['state']['values']['initials-field']
+    label_type = view['state']['values']['label_type']['label_type-input']['value']
+    date = view['state']['values']['date']['date-input']['value']
+    initials = view['state']['values']['initials']['initials-input']['value']
 
     errors = {}
 
     try:
-        n_copies = int(view['state']['values']['num_copies-field'])
+        n_copies = int(view['state']['values']['num_copies']['num_copies-input']['value'])
         if n_copies <= 0:
-            errors['num_copies-field'] = 'Number of copies must be a positive integer!'
+            errors['num_copies-input'] = 'Number of copies must be a positive integer!'
     except ValueError:
-        errors['num_copies-field'] = 'Number of copies must be a positive integer!'
+        errors['num_copies-input'] = 'Number of copies must be a positive integer!'
 
     converted_labels = []
     if label_type == 'bacterial_stock':
         if not all([len(x) == 2 for x in labels]):
-            errors["labels-field"] = "Input is not a two-column (pKG number, name) CSV!"
+            errors["labels-input"] = "Input is not a two-column (pKG number, name) CSV!"
         # Try to convert all to int
         converted_labels = []
         for label in labels:
@@ -280,12 +287,12 @@ def handle_form_submission(ack, body, client, view):
                     str(pKG_num)
                 ))
             except ValueError:
-                errors["labels-field"] = f"Row {label} has invalid pKG number! This should be an integer!"
+                errors["labels-input"] = f"Row {label} has invalid pKG number! This should be an integer!"
                 break
         labels = converted_labels
     elif label_type == 'cell_line_stock':
         if not all([len(x) == 3 for x in labels]):
-            errors["labels-field"] = "Input is not a three-column (circle_label, main_label, description) CSV!"
+            errors["labels-input"] = "Input is not a three-column (circle_label, main_label, description) CSV!"
         converted_labels.append((
             label[1],
             label[2],
@@ -294,7 +301,7 @@ def handle_form_submission(ack, body, client, view):
         ))
     elif label_type == 'virus_stock':
         if not all([len(x) == 4 for x in labels]):
-            errors["labels-field"] = "Input is not a four-column (circle_label, main_label, description, volume_uL) CSV!"
+            errors["labels-input"] = "Input is not a four-column (circle_label, main_label, description, volume_uL) CSV!"
         converted_labels.append((
             f'{label[1]} ({label[3]} uL)',
             label[2],
@@ -303,7 +310,7 @@ def handle_form_submission(ack, body, client, view):
         ))
     elif label_type == 'custom':
         if not all([len(x) == 3 for x in labels]):
-            errors["labels-field"] = "Input is not a three-column (circle_label, line1, line2) CSV!"
+            errors["labels-input"] = "Input is not a three-column (circle_label, line1, line2) CSV!"
         converted_labels.append((
             label[1],
             label[2],
@@ -311,7 +318,7 @@ def handle_form_submission(ack, body, client, view):
             label[0]
         ))
     else:
-        errors["label_type-field"] = "Unexpected label type!"
+        errors["label_type-input"] = "Unexpected label type!"
     if len(errors) > 0:
         ack(response_action="errors", errors=errors)
         return
