@@ -246,6 +246,15 @@ def main_tracker(ack, shortcut, client):
 def handle_print_status_submission(ack, body, client, view):
     ack(response_action='clear')
 
+@loader.slack.action({"block_id": "label_type", "action_id": "label_type-input"})
+def update_placeholder(ack, body, client):
+    """
+    Update the placeholder depending on what option clicked
+    """
+    ack()
+
+    module_config['logger'](body)
+
 @loader.slack.view('label_print_view_submit')
 def handle_form_submission(ack, body, client, view):
     """
@@ -258,7 +267,7 @@ def handle_form_submission(ack, body, client, view):
         view['state']['values']['labels']['labels-input']['value'].split('\n')
     )]
 
-    label_type = view['state']['values']['label_type']['label_type-input']['value']
+    label_type = view['state']['values']['label_type']['label_type-input']['selected_option']['value']
     date = view['state']['values']['date']['date-input']['value']
     initials = view['state']['values']['initials']['initials-input']['value']
 
