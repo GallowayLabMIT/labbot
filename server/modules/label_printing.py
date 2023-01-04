@@ -255,7 +255,23 @@ def update_placeholder(ack, body, client):
     """
     ack()
 
+    option_type = body['actions'][0]['selected_option']['value']
+
+    placeholder = ''
+    if option_type == 'bacterial_stock':
+        placeholder = 'pKG_number, description'
+    elif option_type == 'cell_line_stock':
+        placeholder = 'circle_label, main_label, description'
+    elif option_type == 'virus_stock':
+        placeholder = 'circle_label, main_label, description, volume_in_uL'
+    elif option_type == 'custom':
+        placeholder = 'first_line, second_line, third_line, circle'
+
     module_config['logger'](body['actions'][0]['selected_option']['value'])
+    client.views_update(
+        view_id=body['view']['view_id'],
+        view=build_modal_view(placeholder)
+    )
 
 @loader.slack.view('label_print_view_submit')
 def handle_form_submission(ack, body, client, view):
@@ -278,14 +294,14 @@ def handle_form_submission(ack, body, client, view):
     try:
         n_copies = int(view['state']['values']['num_copies']['num_copies-input']['value'])
         if n_copies <= 0:
-            errors['num_copies-input'] = 'Number of copies must be a positive integer!'
+            errors['num_copies'] = 'Number of copies must be a positive integer!'
     except ValueError:
-        errors['num_copies-input'] = 'Number of copies must be a positive integer!'
+        errors['num_copies'] = 'Number of copies must be a positive integer!'
 
     converted_labels = []
     if label_type == 'bacterial_stock':
         if not all([len(x) == 2 for x in labels]):
-            errors["labels-input"] = "Input is not a two-column (pKG number, name) CSV!"
+            errors["labels"] = "Input is not a two-column (pKG number, name) CSV!"
         # Try to convert all to int
         converted_labels = []
         for label in labels:
@@ -298,12 +314,12 @@ def handle_form_submission(ack, body, client, view):
                     str(pKG_num)
                 ))
             except ValueError:
-                errors["labels-input"] = f"Row {label} has invalid pKG number! This should be an integer!"
+                errors["labels"] = f"Row {label} has invalid pKG number! This should be an integer!"
                 break
         labels = converted_labels
     elif label_type == 'cell_line_stock':
         if not all([len(x) == 3 for x in labels]):
-            errors["labels-input"] = "Input is not a three-column (circle_label, main_label, description) CSV!"
+            errors["labels"] = "Input is not a three-column (circle_label, main_label, description) CSV!"
         converted_labels.append((
             label[1],
             label[2],
@@ -312,7 +328,7 @@ def handle_form_submission(ack, body, client, view):
         ))
     elif label_type == 'virus_stock':
         if not all([len(x) == 4 for x in labels]):
-            errors["labels-input"] = "Input is not a four-column (circle_label, main_label, description, volume_uL) CSV!"
+            errors["labels"] = "Input is not a four-column (circle_label, main_label, description, volume_uL) CSV!"
         converted_labels.append((
             f'{label[1]} ({label[3]} uL)',
             label[2],
@@ -321,7 +337,7 @@ def handle_form_submission(ack, body, client, view):
         ))
     elif label_type == 'custom':
         if not all([len(x) == 3 for x in labels]):
-            errors["labels-input"] = "Input is not a three-column (circle_label, line1, line2) CSV!"
+            errors["labels"] = "Input is not a three-column (circle_label, line1, line2) CSV!"
         converted_labels.append((
             label[1],
             label[2],
@@ -329,7 +345,7 @@ def handle_form_submission(ack, body, client, view):
             label[0]
         ))
     else:
-        errors["label_type-input"] = "Unexpected label type!"
+        errors["label_type"] = "Unexpected label type!"
     if len(errors) > 0:
         ack(response_action="errors", errors=errors)
         return
