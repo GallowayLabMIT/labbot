@@ -278,7 +278,7 @@ def update_placeholder(ack, body, client):
     module_config['logger'](body['actions'][0]['selected_option']['value'])
     client.views_update(
         view_id=body['container']['view_id'],
-        view=build_modal_view(placeholder)
+        view=build_modal_view(box_placeholder=placeholder)
     )
 
 @loader.slack.view('label_print_view_submit')
