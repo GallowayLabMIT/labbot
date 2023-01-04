@@ -13,7 +13,7 @@ if __name__ == '__main__':
     params = {'token': config['token']}
     
     while True:
-        time.sleep(1)
+        time.sleep(2)
         # Try to dequeue an item
         try:
             label_dequeue = json.loads(requests.post(config['base-route'] + '/dequeue', json=params).text)
