@@ -18,7 +18,13 @@ import uvicorn
 
 ETC = pytz.timezone('America/New_York')
 
-print(f'Starting with wd: {os.getcwd()}, exec: {sys.executable},  args: {sys.argv}')
+# argv changed in Python 3.10. Create orig_argv if it doesn't exist
+try:
+    test = sys.orig_argv
+except AttributeError:
+    sys.orig_argv = sys.argv
+
+print(f'Starting with wd: {os.getcwd()}, exec: {sys.executable},  args: {sys.orig_argv}')
 
 # Create shutdown variables
 restart_flag = False
@@ -283,8 +289,8 @@ bolt_client.client.chat_postMessage(
         text='LabBot shutting down. Bye!')
 
 if restart_flag:
-    print(f'Restarting with executable {sys.executable} and args {sys.argv}')
-    os.execv(sys.executable, [sys.executable] + sys.argv)
+    print(f'Restarting with executable {sys.executable} and args {sys.orig_argv}')
+    os.execv(sys.executable, [sys.executable] + sys.orig_argv)
 
 
 
