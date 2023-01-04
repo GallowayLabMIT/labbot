@@ -247,6 +247,7 @@ def handle_form_submission(ack, body, client, view):
     Handles what happens when the label printer gets submitted
     """
 
+    module_config['logger'](view['state']['values'])
     # Perform validation on inputs, e.g. check that the label CSV is well-formed
     labels = [row for row in csv.reader(view['state']['values']['labels-field'].split('\n'))]
 
