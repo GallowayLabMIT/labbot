@@ -22,7 +22,7 @@ ETC = pytz.timezone('America/New_York')
 try:
     test = sys.orig_argv
 except AttributeError:
-    sys.orig_argv = sys.argv
+    sys.orig_argv = [sys.executable] + sys.argv
 
 print(f'Starting with wd: {os.getcwd()}, exec: {sys.executable},  args: {sys.orig_argv}')
 
@@ -289,8 +289,9 @@ bolt_client.client.chat_postMessage(
         text='LabBot shutting down. Bye!')
 
 if restart_flag:
-    print(f'Restarting with executable {sys.executable} and args {sys.orig_argv}')
-    os.execv(sys.executable, [sys.executable] + sys.orig_argv)
+    launch_argv = [sys.executable] + sys.orig_argv[1:]
+    print(f'Restarting with executable {sys.executable} and args {launch_argv}')
+    os.execv(sys.executable, launch_argv)
 
 
 
