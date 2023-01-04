@@ -110,6 +110,7 @@ label_model = {
         {
             "type": "input",
             "block_id": "label_type",
+            "dispatch_action": True,
             "element": {
                 "type": "static_select",
                 "placeholder": {
@@ -333,7 +334,7 @@ def handle_form_submission(ack, body, client, view):
         return
     
     # Add to queue
-    external_id = uuid.uuid4()
+    external_id = str(uuid.uuid4())
     label_queue.append({
         'external_id': external_id,
         'label_count': n_copies,
