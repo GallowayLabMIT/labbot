@@ -268,7 +268,7 @@ def handle_form_submission(ack, body, client, view):
     )]
 
     label_type = view['state']['values']['label_type']['label_type-input']['selected_option']['value']
-    date = view['state']['values']['date']['date-input']['value']
+    date = view['state']['values']['date']['date-input']['selected_date']
     initials = view['state']['values']['initials']['initials-input']['value']
 
     errors = {}
