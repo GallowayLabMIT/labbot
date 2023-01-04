@@ -3,6 +3,7 @@ from typing import Optional
 import copy
 import csv
 import pytz
+import uuid
 
 from fastapi import HTTPException
 
@@ -175,19 +176,46 @@ label_model = {
     ]
 }
 
-def build_modal_view(*, text:Optional[str]=None, box_placeholder:Optional[str]=None):
+print_status_modal = {
+	"type": "modal",
+    "private_metadata": "",
+    "callback_id": "print_status_view_submit",
+	"title": {
+		"type": "plain_text",
+                "text": "Printing...",
+		"emoji": True
+	},
+        "close": {
+            "type": "plain_text",
+            "text": "Print more"
+        },
+	"submit": {
+		"type": "plain_text",
+                "text": "Close",
+		"emoji": True
+	},
+	"blocks": [
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": ""
+			}
+		}
+        ]
+}
+
+def build_modal_view(*, box_placeholder:Optional[str]=None):
     view_copy = copy.deepcopy(label_model)
     if box_placeholder is not None:
         view_copy['blocks'][6]['element']['placeholder']['text'] = box_placeholder
-    if text is not None:
-        view_copy['title']['text'] += '...'
-        view_copy['blocks'].append({
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": f":label: _{text}_"
-            }
-        })
+    return view_copy
+
+def build_status_view(*, external_id:str, status_text:Optional[str]=None):
+    view_copy = copy.deepcopy(print_status_modal)
+    view_copy['external_id'] = external_id
+    if status_text is not None:
+        view_copy['blocks'][0]['text']['text'] = status_text
     return view_copy
 
 @loader.slack.shortcut("print_labels")
@@ -208,6 +236,10 @@ def main_tracker(ack, shortcut, client):
         trigger_id = shortcut['trigger_id'],
         view=view_model
     )
+
+@loader.slack.view('print_status_view_submit')
+def handle_print_status_submission(ack, body, client, view):
+    ack(response_action='clear')
 
 @loader.slack.view('label_print_view_submit')
 def handle_form_submission(ack, body, client, view):
@@ -284,14 +316,15 @@ def handle_form_submission(ack, body, client, view):
         return
     
     # Add to queue
+    external_id = uuid.uuid4()
     label_queue.append({
-        'view_id': view.id,
+        'external_id': external_id,
         'label_count': n_copies,
         'labels': converted_labels
     })
 
     # Compute this 
-    ack(response_action='update', view=build_modal_view(text="Labels queued..."))
+    ack(response_action='push', view=build_status_view(status_text="Labels queued...", external_id=external_id))
 
 @loader.fastapi.post("/labels/dequeue")
 def dequeue_labels(token: str):
@@ -301,8 +334,8 @@ def dequeue_labels(token: str):
     try:
         labels = label_queue.pop(0)
         module_config['slack_client'].views_update(
-            view_id = labels['view_id'],
-            view=build_modal_view(text="Sent to label client...")
+            external_id = labels['external_id'],
+            view=build_status_view(status_text="Sent to label client...", external_id=labels['external_id'])
         )
         return labels
     except IndexError:
@@ -314,6 +347,6 @@ def update_label_status(token: str, vid: int, status: str):
         raise HTTPException(status_code=401, detail="Invalid auth token")
     
     module_config["slack_client"].views_update(
-        view_id = vid,
-        view=build_modal_view(text=f"{status}...")
+        external_id = vid,
+        view=build_status_view(status_text=status, external_id=vid)
     )
