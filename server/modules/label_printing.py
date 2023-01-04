@@ -133,7 +133,7 @@ label_model = {
                             "text": "Cell-line stocking label",
                             "emoji": True
                         },
-                        "value": "virus_stock"
+                        "value": "cell_line_stock"
                     },
                     {
                         "text": {
@@ -254,7 +254,7 @@ def update_placeholder(ack, body, client):
     """
     ack()
 
-    module_config['logger'](body)
+    module_config['logger'](body['actions'][0]['selected_option']['value'])
 
 @loader.slack.view('label_print_view_submit')
 def handle_form_submission(ack, body, client, view):
