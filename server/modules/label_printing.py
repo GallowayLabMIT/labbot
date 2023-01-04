@@ -6,6 +6,7 @@ import pytz
 import uuid
 
 from fastapi import HTTPException
+from pydantic import BaseModel
 
 from labbot.module_loader import ModuleLoader
 
@@ -344,9 +345,12 @@ def handle_form_submission(ack, body, client, view):
     # Compute this 
     ack(response_action='push', view=build_status_view(status_text="Labels queued...", external_id=external_id))
 
+class DequeueRequest(BaseModel):
+    token: str
+
 @loader.fastapi.post("/labels/dequeue")
-def dequeue_labels(token: str):
-    if (token != module_config['token']):
+def dequeue_labels(req:DequeueRequest):
+    if (req.token != module_config['token']):
         raise HTTPException(status_code=401, detail="Invalid auth token")
 
     try:
@@ -359,12 +363,17 @@ def dequeue_labels(token: str):
     except IndexError:
         return {}
 
+class StatusUpdate(BaseModel):
+    token: str
+    view_id: str
+    status_text: str
+
 @loader.fastapi.post("/labels/update_status")
-def update_label_status(token: str, vid: int, status: str):
-    if (token != module_config['token']):
+def update_label_status(status: StatusUpdate):
+    if (status.token != module_config['token']):
         raise HTTPException(status_code=401, detail="Invalid auth token")
     
     module_config["slack_client"].views_update(
-        external_id = vid,
-        view=build_status_view(status_text=status, external_id=vid)
+        external_id = status.view_id,
+        view=build_status_view(status_text=status.status_text, external_id=status.view_id)
     )
