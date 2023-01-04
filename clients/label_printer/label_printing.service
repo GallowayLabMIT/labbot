@@ -3,7 +3,7 @@ Description=Print Dymo labels
 
 [Service]
 Type=simple
-ExecStart=/home/gallowaylab/labbot/clients/label_printer/bin/python print_queued_labels.py
+ExecStart=/home/gallowaylab/labbot/clients/label_printer/env/bin/python print_queued_labels.py
 WorkingDirectory=/home/gallowaylab/labbot/clients/label_printer/
 User=gallowaylab
 Restart=on-failure
