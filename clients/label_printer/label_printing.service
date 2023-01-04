@@ -1,0 +1,13 @@
+[Unit]
+Description=Print Dymo labels
+
+[Service]
+Type=simple
+ExecStart=/home/gallowaylab/label_printer/env/bin/python print_queued_labels.py
+WorkingDirectory=/home/gallowaylab/label_printer/
+User=gallowaylab
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
