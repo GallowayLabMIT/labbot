@@ -269,7 +269,7 @@ def update_placeholder(ack, body, client):
 
     module_config['logger'](body['actions'][0]['selected_option']['value'])
     client.views_update(
-        view_id=body['view']['view_id'],
+        view_id=body['container']['view_id'],
         view=build_modal_view(placeholder)
     )
 
