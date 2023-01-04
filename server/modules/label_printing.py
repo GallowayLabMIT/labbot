@@ -119,6 +119,7 @@ label_model = {
                     "text": "Select a label type",
                     "emoji": True
                 },
+                "initial_option": "bacterial_stock",
                 "options": [
                     {
                         "text": {
