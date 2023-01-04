@@ -18,6 +18,8 @@ import uvicorn
 
 ETC = pytz.timezone('America/New_York')
 
+print(f'Starting with wd: {os.getcwd()}, exec: {sys.executable},  args: {sys.argv}')
+
 # Create shutdown variables
 restart_flag = False
 should_shutdown = threading.Condition()
@@ -281,6 +283,7 @@ bolt_client.client.chat_postMessage(
         text='LabBot shutting down. Bye!')
 
 if restart_flag:
+    print(f'Restarting with executable {sys.executable} and args {sys.argv}')
     os.execv(sys.executable, [sys.executable] + sys.argv)
 
 
