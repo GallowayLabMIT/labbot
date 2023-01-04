@@ -273,7 +273,7 @@ def update_placeholder(ack, body, client):
     elif option_type == 'virus_stock':
         placeholder = 'circle_label, main_label, description, volume_in_uL'
     elif option_type == 'custom':
-        placeholder = 'first_line, second_line, third_line, circle'
+        placeholder = 'first_line, second_line, circle'
 
     module_config['logger'](body['actions'][0]['selected_option']['value'])
     client.views_update(
