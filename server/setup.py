@@ -12,5 +12,6 @@ setup(
                           'requests', 'fastapi', 'uvicorn',
                           'python-multipart', 'pytz',
                           'slack_bolt', 'uvloop', 'paho-mqtt',
+                          'rsa',
                           'google-api-python-client', 'google-auth-httplib2', 'google-auth-oauthlib'],
         zip_safe=True)

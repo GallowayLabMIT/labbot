@@ -6,6 +6,8 @@ import json
 import tempfile # For creating a temp zipping directory
 from zipfile import ZipFile # for creating the zip file
 import os       # for file operations
+import rsa
+import base64
 
 from labbot.module_loader import ModuleLoader
 
@@ -43,9 +45,25 @@ def poll(slack_client):
         module_config['logger']('Starting poll')
         # Login to Genewiz
         session = requests.Session()
+        r = session.get('https://clims4.genewiz.com/RegisterAccount/Login')
+        token = re.search(r'<input name="__RequestVerificationToken" type="hidden" value="([^"]*)">', r.text)
+        pubkey = re.search(r"encrypt.setPublicKey\('([^']*)'\);", r.text)
+        if token is None or pubkey is None:
+            module_config['logger']('Unable to load CSRF token and password pubkey')
+            return 1 * 60
+        
+        encoded_pass = base64.b64encode(
+                        rsa.encrypt(module_config['password'].encode('utf8'),
+                                    base64.b64decode(pubkey.group(1))
+                       ))
+        
+        "gsKSDbDyEIkxZm4p0CUOvjOclrWmTAC04uEGJgvkNSr7LDwWm3qxTRbqKW8Th/QZYqcW6otADB6usrpAFJ/9JDucK/1J7VVOSZbach2GoKpCCfq9LVmreor1vUidXG6TxUD+I++AZZD5C8kPNRYJO63aG7EMvrz3QexAS1KiUlM="
         r = session.post('https://clims4.genewiz.com/RegisterAccount/Login',
-                data={'LoginName': module_config['username'],
-                    'Password' : module_config['password'], 'RememberMe': 'true'})
+                data={
+                    '__RequestVerificationToken': token.group(1),
+                    'LoginName': module_config['username'],
+                    'Password' : encoded_pass, 'RememberMe': 'true'})
+        print(encoded_pass)
         main_screen = session.get('https://clims4.genewiz.com/CustomerHome/Index') 
         module_config['logger']('Got to main screen')
 
