@@ -40,12 +40,14 @@ def poll(slack_client):
         None
     """
     try:
+        module_config['logger']('Starting poll')
         # Login to Genewiz
         session = requests.Session()
         r = session.post('https://clims4.genewiz.com/RegisterAccount/Login',
                 data={'LoginName': module_config['username'],
                     'Password' : module_config['password'], 'RememberMe': 'true'})
         main_screen = session.get('https://clims4.genewiz.com/CustomerHome/Index') 
+        module_config['logger']('Got to main screen')
 
         # Pull out the sequencing requests and oligos
         try:
@@ -53,7 +55,8 @@ def poll(slack_client):
             oligos = _extract_orders(main_screen.text, 'Oligo Synthesis')
         except AttributeError:
             # Ignore Genewiz page load errors from time to time
-            return 5 * 60
+            module_config['logger']('Failed to extract orders :(')
+            return 1 * 60
 
         # Extracted saved non-extracted orders
 
@@ -105,7 +108,7 @@ def poll(slack_client):
         module_config['logger'](str(e))
     finally:
         # Reschedule in 5 minutes
-        return 5 * 60
+        return 1 * 60
 
 
 def _extract_seq_results(order, session):
