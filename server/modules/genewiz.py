@@ -53,9 +53,9 @@ def poll(slack_client):
         try:
             sanger_sequencing = _extract_orders(main_screen.text, 'Sanger Sequencing')
             oligos = _extract_orders(main_screen.text, 'Oligo Synthesis')
-        except AttributeError:
+        except AttributeError as e:
             # Ignore Genewiz page load errors from time to time
-            module_config['logger']('Failed to extract orders :(')
+            module_config['logger'](f'Failed to extract orders :(\nError: {str(e)}')
             return 1 * 60
 
         # Extracted saved non-extracted orders
@@ -211,6 +211,8 @@ def _extract_orders(html, order_type=None):
     """
     # Start extracting data
     model_match = re.search("var model = (.*);\W+var totalOrders", html)
+    module_config['logger'](f'Orders json: {model_match.group(1)}')
+
     # Load all order data
     orders = json.loads(model_match.group(1))
 
