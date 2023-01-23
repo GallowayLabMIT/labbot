@@ -56,8 +56,6 @@ def poll(slack_client):
                         rsa.encrypt(module_config['password'].encode('utf8'),
                                     base64.b64decode(pubkey.group(1))
                        ))
-        
-        "gsKSDbDyEIkxZm4p0CUOvjOclrWmTAC04uEGJgvkNSr7LDwWm3qxTRbqKW8Th/QZYqcW6otADB6usrpAFJ/9JDucK/1J7VVOSZbach2GoKpCCfq9LVmreor1vUidXG6TxUD+I++AZZD5C8kPNRYJO63aG7EMvrz3QexAS1KiUlM="
         r = session.post('https://clims4.genewiz.com/RegisterAccount/Login',
                 data={
                     '__RequestVerificationToken': token.group(1),
