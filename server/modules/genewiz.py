@@ -50,9 +50,7 @@ def poll(slack_client):
         pubkey = re.search(r"encrypt.setPublicKey\('([^']*)'\);", r.text)
         if token is None or pubkey is None:
             module_config['logger']('Unable to load CSRF token and password pubkey')
-            print(token)
-            print(pubkey)
-            return 1 * 60
+            return 5 * 60
         
         pubkey_bytes = rsa.PublicKey.load_pkcs1_openssl_der(base64.b64decode(pubkey.group(1)))
         
@@ -66,9 +64,7 @@ def poll(slack_client):
                     '__RequestVerificationToken': token.group(1),
                     'LoginName': module_config['username'],
                     'Password' : encoded_pass, 'RememberMe': 'true'})
-        print(encoded_pass)
         main_screen = session.get('https://clims4.genewiz.com/CustomerHome/Index') 
-        module_config['logger']('Got to main screen')
 
         # Pull out the sequencing requests and oligos
         try:
@@ -77,7 +73,7 @@ def poll(slack_client):
         except AttributeError as e:
             # Ignore Genewiz page load errors from time to time
             module_config['logger'](f'Failed to extract orders :(\nError: {str(e)}')
-            return 1 * 60
+            return 5 * 60
 
         # Extracted saved non-extracted orders
 
@@ -232,7 +228,6 @@ def _extract_orders(html, order_type=None):
     """
     # Start extracting data
     model_match = re.search("var model = (.*);\W+var totalOrders", html)
-    module_config['logger'](f'Orders json: {model_match.group(1)}')
 
     # Load all order data
     orders = json.loads(model_match.group(1))
