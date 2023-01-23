@@ -46,10 +46,13 @@ def poll(slack_client):
         # Login to Genewiz
         session = requests.Session()
         r = session.get('https://clims4.genewiz.com/RegisterAccount/Login')
+        print(r.text)
         token = re.search(r'<input name="__RequestVerificationToken" type="hidden" value="([^"]*)">', r.text)
         pubkey = re.search(r"encrypt.setPublicKey\('([^']*)'\);", r.text)
         if token is None or pubkey is None:
             module_config['logger']('Unable to load CSRF token and password pubkey')
+            print(token)
+            print(pubkey)
             return 1 * 60
         
         encoded_pass = base64.b64encode(
