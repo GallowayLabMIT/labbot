@@ -54,9 +54,12 @@ def poll(slack_client):
             print(pubkey)
             return 1 * 60
         
+        pubkey_bytes = rsa.PublicKey.load_pkcs1_openssl_der(base64.b64decode(pubkey.group(1)))
+        
         encoded_pass = base64.b64encode(
-                        rsa.encrypt(module_config['password'].encode('utf8'),
-                                    base64.b64decode(pubkey.group(1))
+                        rsa.encrypt(
+                            module_config['password'].encode('utf8'),
+                            pubkey_bytes
                        ))
         r = session.post('https://clims4.genewiz.com/RegisterAccount/Login',
                 data={
