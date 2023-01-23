@@ -125,7 +125,7 @@ def poll(slack_client):
         module_config['logger'](str(e))
     finally:
         # Reschedule in 5 minutes
-        return 1 * 60
+        return 5 * 60
 
 
 def _extract_seq_results(order, session):
