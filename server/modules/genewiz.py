@@ -42,7 +42,6 @@ def poll(slack_client):
         None
     """
     try:
-        module_config['logger']('Starting poll')
         # Login to Genewiz
         session = requests.Session()
         r = session.get('https://clims4.genewiz.com/RegisterAccount/Login')
