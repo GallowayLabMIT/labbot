@@ -1,0 +1,9 @@
+Using arduino_cli:
+
+1. Update the secrets file, by copying `mqtt_secrets.template.h` to `mqtt_secrets.h` and filling in the details.
+2. Download the ESP8266 index: `arduino-cli core update-index --additional-urls https://arduino.esp8266.com/stable/package_esp8266com_index.json`
+3. Install the ESP8266 core: `arduino-cli core install esp8266:esp8266`
+4. Install necessary libraries: `arduino-cli lib install ArduinoMqttClient`
+5. Compile the sketch: `arduino-cli compile --fqbn esp8266:esp8266:generic esp_status_indicator.ino`
+5. Connect the ESP8266, and check which port it is connected to with `arduino-cli board list`
+6. Flash the sketch using that port number `arduino-cli upload -p /dev/ttyUSB0 --fqbn esp8266:esp8266:generic esp_status_indicator.ino`

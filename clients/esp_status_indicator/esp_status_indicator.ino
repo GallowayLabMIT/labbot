@@ -50,6 +50,7 @@ void errorLoop() {
 }
 
 int lastReceiveMillis = 0;
+int loops_since_reconnect = 0;
 char state = 1;
 
 void onMqttMessage(int messageSize) {
@@ -95,7 +96,7 @@ void setup() {
   Serial.begin(115200);
   // Connect to wifi
   Serial.print(F("\nConnecting to wifi"));
-  WiFi.begin(WLAN_SSID);
+  WiFi.begin(WLAN_SSID, WLAN_PASS);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(F("."));
@@ -158,6 +159,12 @@ void flash(int pin) {
 void loop() {
   delay(10);
  
+  if (loops_since_reconnect > 10000000) { // Reconnect periodically
+    loops_since_reconnect = 0;
+    mqttClient.stop();
+    mqttClient.connect(MQTT_BROKER_URL, MQTT_PORT);
+  }
+
   if(!mqttClient.connected()){ // if the client has been disconnected, 
     if (!mqttClient.connect(MQTT_BROKER_URL, MQTT_PORT)) {
         Serial.print("MQTT connection failed! Error code = ");
@@ -165,6 +172,7 @@ void loop() {
         errorLoop();
     }
   }
+  
   mqttClient.poll();
 
   // Check to see if we haven't gotten a heartbeat in a while
