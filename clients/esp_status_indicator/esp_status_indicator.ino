@@ -39,6 +39,7 @@ MqttClient mqttClient(client);
 
 void errorLoop() {
   char stat = 0;
+  ESP.wdtDisable();
   while (true) {
     digitalWrite(onboard, stat);
     digitalWrite(redPin, stat);
@@ -159,10 +160,16 @@ void flash(int pin) {
 void loop() {
   delay(10);
  
+  loops_since_reconnect += 1;
   if (loops_since_reconnect > 10000000) { // Reconnect periodically
     loops_since_reconnect = 0;
+    Serial.print("Reconnecting MQTT");
     mqttClient.stop();
-    mqttClient.connect(MQTT_BROKER_URL, MQTT_PORT);
+    if (!mqttClient.connect(MQTT_BROKER_URL, MQTT_PORT)) {
+        Serial.print("MQTT connection failed! Error code = ");
+        Serial.println(mqttClient.connectError());
+        errorLoop();
+    }
   }
 
   if(!mqttClient.connected()){ // if the client has been disconnected, 
