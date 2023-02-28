@@ -186,7 +186,10 @@ void loop() {
   int currentMillis = millis();
   if (currentMillis < lastReceiveMillis || (currentMillis - lastReceiveMillis) > heartbeatDelayMillis) {
     if (state == 0) {
+      
       state = 1;
+      // Reset
+      ESP.wdtDisable();
     }
     requestUpdate();
     Serial.println(F("Requesting update from server, no heartbeat received!"));
