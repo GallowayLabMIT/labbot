@@ -155,6 +155,14 @@ label_model = {
                     {
                         "text": {
                             "type": "plain_text",
+                            "text": "Custom label with normal date",
+                            "emoji": True
+                        },
+                        "value": "custom_w_date"
+                    },
+                    {
+                        "text": {
+                            "type": "plain_text",
                             "text": "Custom label",
                             "emoji": True
                         },
@@ -272,8 +280,10 @@ def update_placeholder(ack, body, client):
         placeholder = 'circle_label, main_label, description'
     elif option_type == 'virus_stock':
         placeholder = 'circle_label, main_label, description, volume_in_uL'
-    elif option_type == 'custom':
+    elif option_type == 'custom_w_date':
         placeholder = 'circle, first_line, second_line'
+    elif option_type == 'custom':
+        placeholder = 'circle, first_line, second_line, third_line'
 
     module_config['logger'](body['actions'][0]['selected_option']['value'])
     client.views_update(
@@ -346,7 +356,7 @@ def handle_form_submission(ack, body, client, view):
                     f'{date} {initials}',
                     label[0]
                 ))
-    elif label_type == 'custom':
+    elif label_type == 'custom_w_date':
         if not all([len(x) == 3 for x in labels]):
             errors["labels"] = "Input is not a three-column (circle_label, line1, line2) CSV!"
         else:
@@ -355,6 +365,17 @@ def handle_form_submission(ack, body, client, view):
                     label[1],
                     label[2],
                     f'{date} {initials}',
+                    label[0]
+                ))
+    elif label_type == 'custom':
+        if not all([len(x) == 4 for x in labels]):
+            errors["labels"] = "Input is not a four-column (circle_label, line1, line2, line3) CSV!"
+        else:
+            for label in labels:
+                converted_labels.append((
+                    label[1],
+                    label[2],
+                    label[3],
                     label[0]
                 ))
     else:
