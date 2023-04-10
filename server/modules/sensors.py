@@ -215,14 +215,14 @@ def poll_mqtt(slack_client):
     if mqtt_client._state == mqtt.mqtt_cs_connect_async:
         try:
             mqtt_client.reconnect()
-        except Exception as e:
+        except (Exception, OSError) as e:
             module_config['logger'](f'Got exception while reconnecting to MQTT: {e}')
     # Call the MQTT loop command once every five seconds
     rc = mqtt_client.loop(timeout=0.1)
     if rc != mqtt.MQTT_ERR_SUCCESS:
         try:
             mqtt_client.reconnect()
-        except Exception as e:
+        except (Exception, OSError) as e:
             module_config['logger'](f'Got exception while reconnecting to MQTT: {e}')
     return 5
 
