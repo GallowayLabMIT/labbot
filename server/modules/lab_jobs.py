@@ -790,6 +790,7 @@ def edit_reminder_schedule_modal(ack, body, client, view):
         (name, reminders)
         VALUES (?, ?)
     """, (name, reminders))
+    db_con.commit()
 
     client.views_update(
         view=build_view_jobs_modal(db_con),
@@ -867,6 +868,7 @@ def edit_labjob(ack, body, client, view):
         (sort_priority, name, last_generated_ts, reminder_schedule, recurrence, assignee)
         VALUES (?, ?, "1970-01-01", ?, ?, ?)
     """, (sort_priority, name, reminder_schedule, recurrence, assignee))
+    db_con.commit()
 
     client.views_update(
         view=build_view_jobs_modal(db_con),
