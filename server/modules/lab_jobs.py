@@ -21,42 +21,40 @@ from typing import Callable, Dict, List
 
 ET = timezone('US/Eastern')
 
-REMINDER_MESSAGE = {
-    "blocks": [
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": "{job_name}\n<!date^{due_ts}^Due {{date_long_pretty}}|{fallback_ts}>\n_If you are unable to do your job this time, reassign it to someone who can after confirming with them_"
-            }
-        },
-        {
-            "type": "actions",
-            "elements": [
-                {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": ":white_check_mark: I did this job",
-                        "emoji": True
-                    },
-                    "value": "{job_id}",
-                    "action_id": "labjob-complete"
-                },
-                {
-                    "type": "button",
-                    "text": {
-                        "type": "plain_text",
-                        "text": ":recycle: Reassign this instance",
-                        "emoji": True
-                    },
-                    "value": "{job_id}",
-                    "action_id": "labjob-reassign"
-                }
-            ]
+REMINDER_MESSAGE = [
+    {
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": "{job_name}\n<!date^{due_ts}^Due {{date_long_pretty}}|{fallback_ts}>\n_If you are unable to do your job this time, reassign it to someone who can after confirming with them_"
         }
-    ]
-}
+    },
+    {
+        "type": "actions",
+        "elements": [
+            {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": ":white_check_mark: I did this job",
+                    "emoji": True
+                },
+                "value": "{job_id}",
+                "action_id": "labjob-complete"
+            },
+            {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": ":recycle: Reassign this instance",
+                    "emoji": True
+                },
+                "value": "{job_id}",
+                "action_id": "labjob-reassign"
+            }
+        ]
+    }
+]
 
 def build_reminder_message(job_id: int, job_name: str, due: datetime.datetime):
     message = copy.deepcopy(REMINDER_MESSAGE)
