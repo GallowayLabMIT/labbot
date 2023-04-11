@@ -530,7 +530,7 @@ JOB_HOME = [
                     "type": "plain_text",
                     "text": "Edit jobs"
                 },
-                "value": "",
+                "value": "edit",
                 "action_id": "labjob-view"
             },
             {
@@ -539,7 +539,7 @@ JOB_HOME = [
                     "type": "plain_text",
                     "text": "Edit reminder schedules"
                 },
-                "value": "",
+                "value": "edit",
                 "action_id": "reminder_schedule-view"
             }
         ]
@@ -621,7 +621,7 @@ def add_new_jobs(db_con:sqlite3.Connection) -> List[int]:
     # Only do the check after 9am
     if now.hour <= 9:
         return []
-    today: str = now.date.isoformat()
+    today: str = datetime.date.today().isoformat()
     possible_jobs = db_con.execute("SELECT id, name, reminder_schedule, recurrence, assignee FROM template_jobs WHERE last_generated_ts<?;", (today,)).fetchall()
 
     inserted_rows: List[int] = []
@@ -757,7 +757,8 @@ def show_labjob_view_modal(ack, body, client):
     db_con.row_factory = sqlite3.Row
 
     client.views_open(
-        view=build_view_jobs_modal(db_con)
+        view=build_view_jobs_modal(db_con),
+        trigger_id=body['trigger_id']
     )
 
     db_con.close()
@@ -770,7 +771,8 @@ def show_schedule_view_modal(ack, body, client):
     db_con.row_factory = sqlite3.Row
 
     client.views_open(
-        view=build_reminder_schedule_modal(db_con)
+        view=build_reminder_schedule_modal(db_con),
+        trigger_id=body['trigger_id']
     )
 
     db_con.close()
