@@ -792,7 +792,8 @@ def complete_labjob(ack, body, client):
         client.chat_update(
             channel=reminder['channel'],
             ts=reminder['slack_message_ts'],
-            blocks=build_completed_message(job['name'], datetime.datetime.fromisoformat(job['due_ts']))
+            blocks=build_completed_message(job['name'], datetime.datetime.fromisoformat(job['due_ts'])),
+            text=f'Lab job {job["name"]} complete!'
         )
     db_con.close()
 
@@ -802,9 +803,11 @@ def show_reassign_modal(ack, body, client):
 
     db_con = sqlite3.connect('labjobs.db')
     db_con.row_factory = sqlite3.Row
+    job_id = int(body['actions'][0]['value'])
+    job = db_con.execute("SELECT name, due_ts FROM jobs WHERE id=?", (job_id,)).fetchone()
 
     client.views_open(
-        view=build_reassign_modal(db_con),
+        view=build_reassign_modal(job_id, job["name"], datetime.datetime.fromisoformat(job["due_ts"])),
         trigger_id=body['trigger_id']
     )
 
