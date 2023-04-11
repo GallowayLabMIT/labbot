@@ -383,7 +383,7 @@ EDIT_JOB_MODAL = {
     ]
 }
 
-def build_edit_job_modal(db_con: sqlite3.Connection, job_id: int):
+def build_edit_job_modal(db_con: sqlite3.Connection, job_id: int, prev_view: str):
     """Returns the edit job modal"""
 
     edit_modal = copy.deepcopy(EDIT_JOB_MODAL)
@@ -410,6 +410,8 @@ def build_edit_job_modal(db_con: sqlite3.Connection, job_id: int):
     
     edit_modal['blocks'][6]['element']['initial_value'] = job['recurrence']
     edit_modal['blocks'][7]['elements'][0]['value'] = str(job_id)
+
+    edit_modal['private_metadata'] = f'{job_id};{prev_view}'
     return edit_modal
 
 EDIT_REMINDER_SCHEDULE_MODAL = {
@@ -791,7 +793,7 @@ def edit_reminder_schedule_modal(ack, body, client, view):
     db_con.row_factory = sqlite3.Row
     db_con.execute("""
         UPDATE reminder_schedules
-        name=?, reminders=?
+        SET name=?, reminders=?
         WHERE id=?
     """, (name, reminders, schedule_id))
     db_con.commit()
@@ -850,7 +852,7 @@ def edit_labjob(ack, body, client):
     db_con = sqlite3.connect('labjobs.db')
     db_con.row_factory = sqlite3.Row
     client.views_push(
-        view=build_edit_job_modal(db_con, int(body['actions'][0]['value'])),
+        view=build_edit_job_modal(db_con, int(body['actions'][0]['value']), body['container']['view_id']),
         trigger_id=body['trigger_id']
     )
     db_con.close()
@@ -859,6 +861,9 @@ def edit_labjob(ack, body, client):
 def edit_labjob(ack, body, client, view):
     ack()
 
+    metadata_split = view['private_metadata'].split(';')
+    job_id = int(metadata_split[0])
+    prev_view = metadata_split[1]
     name = view['state']['values']['labjob-name']['labjob-nameval']
     assignee = view['state']['values']['labjob-assignee']['labjob-assigneeval']
     sort_priority = int(view['state']['values']['labjob-sort_priority']['labjob-sort_priorityval'])
@@ -868,15 +873,15 @@ def edit_labjob(ack, body, client, view):
     db_con = sqlite3.connect('labjobs.db')
     db_con.row_factory = sqlite3.Row
     db_con.execute("""
-        INSERT INTO template_jobs
-        (sort_priority, name, last_generated_ts, reminder_schedule, recurrence, assignee)
-        VALUES (?, ?, "1970-01-01", ?, ?, ?)
-    """, (sort_priority, name, reminder_schedule, recurrence, assignee))
+        UPDATE template_jobs
+        SET sort_priority=?, name=?, last_generated_ts="1970-01-01", reminder_schedule=?, recurrence=?, assignee=?
+        WHERE id=?
+    """, (sort_priority, name, reminder_schedule, recurrence, assignee, job_id))
     db_con.commit()
 
     client.views_update(
         view=build_view_jobs_modal(db_con),
-        view_id=body['container']['view_id']
+        view_id=prev_view
     )
     db_con.close()
 
