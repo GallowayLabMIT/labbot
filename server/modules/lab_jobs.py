@@ -645,8 +645,8 @@ def add_new_jobs(db_con:sqlite3.Connection) -> List[int]:
             continue
         # Check the recurrence against today
         next_event: datetime.datetime = rrule.rrulestr(job['recurrence']).after(now.replace(tzinfo=None), inc=True)
-        module_config['logger'](f'Next event for {job["name"]}: {next_event.isoformat()}')
-        if next_event.isoformat() == today:
+        module_config['logger'](f'Next event for {job["name"]}: {next_event.date.isoformat()}')
+        if next_event.date == today:
             # Generate an event
             cur = db_con.execute(
                 "INSERT INTO jobs (done, name, due_ts, last_reminder_ts, reminder_schedule, assignee) VALUES (0, ?, ?, ?, ?, ?)",
