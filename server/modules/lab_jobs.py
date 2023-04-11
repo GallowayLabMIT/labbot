@@ -158,7 +158,7 @@ def build_reassign_modal(job_id: int, job_name: str, due: datetime.datetime):
     modal = copy.deepcopy(REASSIGN_MODAL)
     modal['blocks'][0]['text']['text'] = modal['blocks'][0]['text']['text'].format(
         lab_job=job_name,
-        due_ts=due.timestamp(),
+        due_ts=int(due.timestamp()),
         fallback_ts=f'Due {due.isoformat()}'
     )
     modal['private_metadata'] = str(job_id)
@@ -821,6 +821,40 @@ def reassign_labjob(ack, body, client, view):
     ack()
     module_config['logger'](body)
 
+    new_assignee = view['state']['values']['userselect']['userselectval']['selected_user']
+    job_id = int(view['private_metadata'])
+
+    db_con = sqlite3.connect('labjobs.db')
+    db_con.row_factory = sqlite3.Row
+    db_con.execute("UPDATE jobs SET assignee=? WHERE id=?", (new_assignee, job_id))
+    db_con.commit()
+    # Send message updates
+    job = db_con.execute("SELECT name, due_ts FROM jobs WHERE id=?", (job_id,)).fetchone()
+    reminders = db_con.execute("SELECT channel, slack_message_ts FROM reminder_messages WHERE job_id=?", (job_id,)).fetchall()
+    for reminder in reminders:
+        client.chat_update(
+            channel=reminder['channel'],
+            ts=reminder['slack_message_ts'],
+            blocks=build_reassigned_message(job['name'], new_assignee),
+            text=f'Lab job {job["name"]} reassigned'
+        )
+
+    block_message = build_reminder_message(job_id, job['name'], datetime.datetime.fromisoformat(job['due_ts'])),
+    block_message[0]['text']['text'] = "Job reassigned to you.\n" + block_message[0]['text']['text']
+    new_message = module_config['slack_client'].chat_postMessage(
+        channel=job['assignee'],
+        blocks=block_message,
+        text=f"Reminder: {job['name']}"
+    )
+
+    # Track the new message and set the last reminder timestamp properly
+    db_con.execute(
+        "INSERT INTO reminder_messages (job_id, channel, slack_message_ts) VALUES (?,?,?)",
+        (job_id, new_message['channel'], new_message['ts'])
+    )
+    db_con.commit()
+    db_con.close()
+
 @loader.slack.action({"action_id": "reminder_schedule-add"})
 def add_reminder_schedule(ack, body, client):
     ack()
@@ -1012,4 +1046,7 @@ def _assignee_noop(ack, body, logger):
     ack()
 @loader.slack.action({"action_id": "labjob-reminder_scheduleval"})
 def _assignee_noop(ack, body, logger):
+    ack()
+@loader.slack.action({"action_id": "userselectval"})
+def _reassign_noop(ack, body, logger):
     ack()
