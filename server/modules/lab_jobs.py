@@ -840,6 +840,7 @@ def reassign_labjob(ack, body, client, view):
         )
 
     block_message = build_reminder_message(job_id, job['name'], datetime.datetime.fromisoformat(job['due_ts'])),
+    module_config['logger'](block_message)
     block_message[0]['text']['text'] = "Job reassigned to you.\n" + block_message[0]['text']['text']
     new_message = module_config['slack_client'].chat_postMessage(
         channel=job['assignee'],
