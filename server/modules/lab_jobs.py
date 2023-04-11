@@ -660,7 +660,7 @@ def get_schedules(db_con:sqlite3.Connection) -> Dict[int, Callable[[datetime.tim
     for schedule in schedules:
         # Parse the reminders string
         # This is of the form "<delay>:reminder_duration; <delay2>:reminder_duration2"
-        reminder_pairs = [[datetime.timedelta(seconds=Duration(x).to_seconds()) for x in s.split(':')] for s in schedule['reminders'].split(';')]
+        reminder_pairs = [[datetime.timedelta(seconds=Duration(x).to_seconds()) for x in s.split('=')] for s in schedule['reminders'].split(';')]
         # Add an "infinite" delay at time delta zero
         reminder_pairs.append([datetime.timedelta(seconds=0), datetime.timedelta(days=100*365)])
 
