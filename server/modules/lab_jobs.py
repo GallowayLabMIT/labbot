@@ -61,7 +61,7 @@ REMINDER_COMPLETE_MESSAGE = [
         "type": "section",
         "text": {
             "type": "mrkdwn",
-            "text": "Lab job: {job_name} complete!\n<!date^{due_ts}^Due {{date_long_pretty}}|{fallback_ts}>"
+            "text": "Lab job: {job_name} complete!"
         }
     }
 ]
@@ -124,7 +124,7 @@ REASSIGN_MODAL = {
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": "{lab_job}\n<!date^{due_ts}^Posted {date_long_pretty}|{fallback_ts}>"
+                "text": "{lab_job}\n<!date^{due_ts}^Posted {{date_long_pretty}}|{fallback_ts}>"
             }
         },
         {
