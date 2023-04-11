@@ -256,6 +256,10 @@ EDIT_JOB_MODAL = {
         "type": "plain_text",
         "text": "Done"
     },
+    "close": {
+        "type": "plain_text",
+        "text": "Cancel",
+    },
     "type": "modal",
     "blocks": [
         {
@@ -417,6 +421,10 @@ EDIT_REMINDER_SCHEDULE_MODAL = {
     "submit": {
         "type": "plain_text",
         "text": "Done",
+    },
+    "close": {
+        "type": "plain_text",
+        "text": "Cancel",
     },
     "type": "modal",
     "blocks": [
@@ -769,9 +777,25 @@ def edit_reminder_schedule(ack, body, client):
     db_con.close()
 
 @loader.slack.view("reminder_schedule-edit-modal")
-def edit_reminder_schedule(ack, body, client, view):
+def edit_reminder_schedule_modal(ack, body, client, view):
     ack()
-    module_config['logger'](body)
+
+    name = view['state']['values']['reminder_schedule-name']['reminder_schedule-nameval']
+    reminders = view['state']['values']['reminder_schedule-schedule']['reminder_schedule-scheduleval']
+    module_config['logger'](f'Schedule update: {name},{reminders}')
+    db_con = sqlite3.connect('labjobs.db')
+    db_con.row_factory = sqlite3.Row
+    db_con.execute("""
+        INSERT INTO reminder_schedules
+        (name, reminders)
+        VALUES (?, ?)
+    """, (name, reminders))
+
+    client.views_update(
+        view=build_view_jobs_modal(db_con),
+        view_id=body['container']['view_id']
+    )
+    db_con.close()
 
 @loader.slack.action({"action_id": "reminder_schedule-delete"})
 def delete_reminder_schedule(ack, body, client):
@@ -829,7 +853,26 @@ def edit_labjob(ack, body, client):
 @loader.slack.view("labjob-edit-modal")
 def edit_labjob(ack, body, client, view):
     ack()
-    module_config['logger'](body)
+
+    name = view['state']['values']['labjob-name']['labjob-nameval']
+    assignee = view['state']['values']['labjob-assignee']['labjob-asigneeval']
+    sort_priority = int(view['state']['values']['labjob-sort_priority']['labjob-sort_priorityval'])
+    reminder_schedule = int(view['state']['values']['labjob-reminder_schedule']['labjob-reminder_scheduleval'])
+    recurrence = view['state']['values']['labjob-recurrence']['labjob-recurrenceval'])
+    module_config['logger'](f'Job update: {name},{assignee},{sort_priority},{reminder_schedule},{recurrence}')
+    db_con = sqlite3.connect('labjobs.db')
+    db_con.row_factory = sqlite3.Row
+    db_con.execute("""
+        INSERT INTO template_jobs
+        (sort_priority, name, last_generated_ts, reminder_schedule, recurrence, assignee)
+        VALUES (?, ?, "1970-01-01", ?, ?, ?)
+    """, (sort_priority, name, reminder_schedule, recurrence, assignee))
+
+    client.views_update(
+        view=build_view_jobs_modal(db_con),
+        view_id=body['container']['view_id']
+    )
+    db_con.close()
 
 @loader.slack.action({"action_id": "labjob-delete"})
 def delete_labjob(ack, body, client):
