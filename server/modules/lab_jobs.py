@@ -768,7 +768,7 @@ def lab_job_home_tab(_user):
     home_tab_blocks[1]['text']['text'] = home_tab_blocks[1]['text']['text'].format(num_jobs=n_jobs)
     if len(due_jobs) > 0:
         home_tab_blocks[3]['text']['text'] = '*Pending jobs*:\n' + '\n'.join([
-            f'{job["name"]} (<{job["assignee"]}>)'
+            f'{job["name"]} (<@{job["assignee"]}>)'
             for job in due_jobs
         ])
 
