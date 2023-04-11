@@ -708,7 +708,8 @@ def check_jobs_reminders(_):
         send_reminders(db_con, new_jobs)
         db_con.close()
     except (Exception, OSError) as e:
-        module_config['logger'](f'Got exception while running reminders: {e}\nStacktrace: {traceback.TracebackException.from_exception(e).format()}')
+        stacktrace = '\n'.join(traceback.TracebackException.from_exception(e).format())
+        module_config['logger'](f'Got exception while running reminders: {e}\nStacktrace: {stacktrace}')
     return 30 * 1
 
 @loader.home_tab
