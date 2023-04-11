@@ -58,13 +58,13 @@ REMINDER_MESSAGE = [
 
 def build_reminder_message(job_id: int, job_name: str, due: datetime.datetime):
     message = copy.deepcopy(REMINDER_MESSAGE)
-    message['blocks'][0]['text']['text'] = message['blocks'][0]['text']['text'].format(
+    message[0]['text']['text'] = message[0]['text']['text'].format(
         job_name=job_name,
         due_ts=due.timestamp(),
         fallback_ts=f'Due {due.isoformat()}'
     )
-    message['blocks'][1]['elements'][0]['value'] = str(job_id)
-    message['blocks'][1]['elements'][1]['value'] = str(job_id)
+    message[1]['elements'][0]['value'] = str(job_id)
+    message[1]['elements'][1]['value'] = str(job_id)
     return message
 
 REASSIGN_MODAL = {
