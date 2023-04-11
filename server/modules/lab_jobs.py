@@ -610,6 +610,7 @@ def register_module(config):
         );
         ''')
         db_con.execute('''CREATE INDEX IF NOT EXISTS job_id_slack_index ON reminder_messages (job_id)''')
+    db_con.commit()
     db_con.close()
     return loader
 
@@ -746,9 +747,10 @@ def edit_reminder_schedule(ack, body, client):
         INSERT INTO reminder_schedules (name, reminders)
         VALUES ("Unnamed", "")
     """)
+    db_con.commit()
     db_con.close()
 
-    module_config['logger'](body['actions'])
+    module_config['logger'](body)
 
 @loader.slack.action({"action_id": "labjob-add"})
 def add_labjob(ack, body, client):
@@ -761,9 +763,11 @@ def add_labjob(ack, body, client):
         INSERT INTO template_jobs (sort_priority, name, last_generated_ts, recurrence)
         VALUES (0, "Unnamed", "1970-01-01", "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO")
     """)
+    db_con.commit()
     db_con.close()
 
-    module_config['logger'](body['actions'])
+
+    module_config['logger'](body)
 
 @loader.slack.view("labjob-edit-modal")
 def edit_labjob(ack, body, client, view):
