@@ -670,16 +670,15 @@ def add_new_jobs(db_con:sqlite3.Connection) -> List[int]:
     if now.hour <= 9:
         return []
     today: str = datetime.date.today().isoformat()
-    possible_jobs = db_con.execute("SELECT id, name, reminder_schedule, recurrence, assignee FROM template_jobs WHERE last_generated_ts<?", (today,)).fetchall()
+    possible_jobs = db_con.execute("SELECT id, name, reminder_schedule, recurrence, assignee, last_generated_ts FROM template_jobs WHERE last_generated_ts<?;", (today,)).fetchall()
 
     inserted_rows: List[int] = []
     for job in possible_jobs:
         if job['assignee'] is None:
             continue
-
         # Check the recurrence against today
         next_event: datetime.datetime = rrule.rrulestr(job['recurrence']).after(now.replace(tzinfo=None), inc=True)
-        module_config['logger'](f'Next event for {job["name"]}: {next_event.date().isoformat()}')
+        module_config['logger'](f'Next event for {job["name"]}: {next_event.date().isoformat()} with last_ts: {job["last_generated_ts"]}')
         if next_event.date() == now.date():
             # Generate an event
             cur = db_con.execute(
@@ -778,6 +777,7 @@ def lab_job_home_tab(_user):
 def complete_labjob(ack, body, client):
     """Completes the given lab job, updating all messages."""
     ack()
+    module_config['logger'](body)
     db_con = sqlite3.connect('labjobs.db')
     db_con.row_factory = sqlite3.Row
 
