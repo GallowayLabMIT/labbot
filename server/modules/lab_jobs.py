@@ -772,7 +772,7 @@ def edit_reminder_schedule(ack, body, client):
     db_con = sqlite3.connect('labjobs.db')
     db_con.row_factory = sqlite3.Row
     client.views_push(
-        view=build_edit_reminder_schedule_modal(db_con, int(body['actions'][0]['value'])),
+        view=build_edit_reminder_schedule_modal(db_con, int(body['actions'][0]['value']), body['container']['view_id']),
         trigger_id=body['trigger_id']
     )
     db_con.close()
