@@ -776,9 +776,21 @@ def edit_reminder_schedule(ack, body, client, view):
 @loader.slack.action({"action_id": "reminder_schedule-delete"})
 def delete_reminder_schedule(ack, body, client):
     ack()
+    
+    # NULL out any template jobs and jobs that reference this schedule
+    schedule_id = int(body['actions'][0]['value'])
+    db_con = sqlite3.connect('labjobs.db')
+    db_con.execute("UPDATE template_jobs SET reminder_schedule=NULL WHERE reminder_schedule=?", (schedule_id,))
+    db_con.execute("UPDATE jobs SET reminder_schedule=NULL WHERE reminder_schedule=?", (schedule_id,))
+    db_con.execute("DELETE FROM reminder_schedules WHERE id=?", (schedule_id,))
+    db_con.commit()
 
-    module_config['logger'](body)
+    client.views_update(
+        view=build_reminder_schedule_modal(db_con),
+        view_id=body['container']['view_id']
+    )
 
+    db_con.close()
 
 @loader.slack.action({"action_id": "labjob-add"})
 def add_labjob(ack, body, client):
@@ -799,9 +811,6 @@ def add_labjob(ack, body, client):
     )
 
     db_con.close()
-
-
-    module_config['logger'](body)
 
 @loader.slack.action({"action_id": "labjob-edit"})
 def edit_labjob(ack, body, client):
@@ -825,9 +834,16 @@ def edit_labjob(ack, body, client, view):
 def delete_labjob(ack, body, client):
     ack()
 
-    module_config['logger'](body)
+    labjob_id = int(body['actions'][0]['value'])
+    db_con = sqlite3.connect('labjobs.db')
+    db_con.execute("DELETE FROM template_labjobs WHERE id=?", (labjob_id,))
+    db_con.commit()
 
-
+    client.views_update(
+        view=build_view_jobs_modal(db_con),
+        view_id=body['container']['view_id']
+    )
+    db_con.close()
 
 @loader.slack.action({"action_id": "labjob-view"})
 def show_labjob_view_modal(ack, body, client):
