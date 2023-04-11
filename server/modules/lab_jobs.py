@@ -21,40 +21,40 @@ from typing import Callable, Dict, List
 ET = timezone('US/Eastern')
 
 REMINDER_MESSAGE = {
-	"blocks": [
-		{
-			"type": "section",
-			"text": {
-				"type": "mrkdwn",
-				"text": "{job_name}\n<!date^{due_ts}^Due {{date_long_pretty}}|{fallback_ts}>\n_If you are unable to do your job this time, reassign it to someone who can after confirming with them_"
-			}
-		},
-		{
-			"type": "actions",
-			"elements": [
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": ":white_check_mark: I did this job",
-						"emoji": True
-					},
-					"value": "{job_id}",
-					"action_id": "labjob-complete"
-				},
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": ":recycle: Reassign this instance",
-						"emoji": True
-					},
-					"value": "{job_id}",
-					"action_id": "labjob-reassign"
-				}
-			]
-		}
-	]
+    "blocks": [
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "{job_name}\n<!date^{due_ts}^Due {{date_long_pretty}}|{fallback_ts}>\n_If you are unable to do your job this time, reassign it to someone who can after confirming with them_"
+            }
+        },
+        {
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": ":white_check_mark: I did this job",
+                        "emoji": True
+                    },
+                    "value": "{job_id}",
+                    "action_id": "labjob-complete"
+                },
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": ":recycle: Reassign this instance",
+                        "emoji": True
+                    },
+                    "value": "{job_id}",
+                    "action_id": "labjob-reassign"
+                }
+            ]
+        }
+    ]
 }
 
 def build_reminder_message(job_id: int, job_name: str, due: datetime.datetime):
@@ -69,56 +69,56 @@ def build_reminder_message(job_id: int, job_name: str, due: datetime.datetime):
     return message
 
 REASSIGN_MODAL = {
-	"type": "modal",
+    "type": "modal",
     "callback_id": "labjob-reassign-modal",
-	"title": {
-		"type": "plain_text",
-		"text": "Reassign lab job",
-		"emoji": True
-	},
-	"submit": {
-		"type": "plain_text",
-		"text": "Submit",
-		"emoji": True
-	},
-	"close": {
-		"type": "plain_text",
-		"text": "Cancel",
-		"emoji": True
-	},
-	"blocks": [
-		{
-			"type": "section",
-			"text": {
-				"type": "mrkdwn",
-				"text": "{lab_job}\n<!date^{due_ts}^Posted {date_long_pretty}|{fallback_ts}>"
-			}
-		},
-		{
-			"type": "section",
-			"text": {
-				"type": "mrkdwn",
-				"text": "_If you want to permanently reassign this job, go to the Labbot home page._"
-			}
-		},
-		{
-			"type": "section",
+    "title": {
+        "type": "plain_text",
+        "text": "Reassign lab job",
+        "emoji": True
+    },
+    "submit": {
+        "type": "plain_text",
+        "text": "Submit",
+        "emoji": True
+    },
+    "close": {
+        "type": "plain_text",
+        "text": "Cancel",
+        "emoji": True
+    },
+    "blocks": [
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "{lab_job}\n<!date^{due_ts}^Posted {date_long_pretty}|{fallback_ts}>"
+            }
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "_If you want to permanently reassign this job, go to the Labbot home page._"
+            }
+        },
+        {
+            "type": "section",
             "block_id": "userselect",
-			"text": {
-				"type": "mrkdwn",
-				"text": "Reassign this occurrence to:"
-			},
-			"accessory": {
-				"type": "users_select",
-				"placeholder": {
-					"type": "plain_text",
-					"text": "Select a user",
-					"emoji": True
-				},
-				"action_id": "userselectval"
-			}
-		}
-	]
+            "text": {
+                "type": "mrkdwn",
+                "text": "Reassign this occurrence to:"
+            },
+            "accessory": {
+                "type": "users_select",
+                "placeholder": {
+                    "type": "plain_text",
+                    "text": "Select a user",
+                    "emoji": True
+                },
+                "action_id": "userselectval"
+            }
+        }
+    ]
 }
 
 def build_reassign_modal(job_id: int, job_name: str, due: datetime.datetime):
@@ -131,32 +131,32 @@ def build_reassign_modal(job_id: int, job_name: str, due: datetime.datetime):
     return modal
 
 VIEW_REMINDER_SCHEDULE_MODAL = {
-	"type": "modal",
-	"title": {
-		"type": "plain_text",
-		"text": "View reminder schedules",
-		"emoji": True
-	},
-	"close": {
-		"type": "plain_text",
-		"text": "Done",
-		"emoji": True
-	},
-	"blocks": [
-		{
-			"type": "actions",
-			"elements": [
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Add reminder schedule"
-					},
-					"action_id": "reminder_schedule-add"
-				}
-			]
-		}
-	]
+    "type": "modal",
+    "title": {
+        "type": "plain_text",
+        "text": "View reminder schedules",
+        "emoji": True
+    },
+    "close": {
+        "type": "plain_text",
+        "text": "Done",
+        "emoji": True
+    },
+    "blocks": [
+        {
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Add reminder schedule"
+                    },
+                    "action_id": "reminder_schedule-add"
+                }
+            ]
+        }
+    ]
 }
 
 def build_reminder_schedule_modal(db_con: sqlite3.Connection):
@@ -165,54 +165,54 @@ def build_reminder_schedule_modal(db_con: sqlite3.Connection):
     view_modal = copy.deepcopy(VIEW_REMINDER_SCHEDULE_MODAL)
     schedules = db_con.execute("SELECT id, name FROM reminder_schedules").fetchall()
     view_modal['blocks'] = [
-		{
-			"type": "section",
-			"text": {
-				"type": "mrkdwn",
-				"text": schedule['name']
-			},
-			"accessory": {
-				"type": "button",
-				"text": {
-					"type": "plain_text",
-					"text": "Edit",
-					"emoji": True
-				},
-				"value": f"{schedule['id']}",
-				"action_id": "reminder_schedule-edit"
-			}
-		} for schedule in schedules
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": schedule['name']
+            },
+            "accessory": {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "Edit",
+                    "emoji": True
+                },
+                "value": f"{schedule['id']}",
+                "action_id": "reminder_schedule-edit"
+            }
+        } for schedule in schedules
     ] + view_modal['blocks']
     return view_modal
 
 VIEW_JOBS_MODAL = {
-	"type": "modal",
-	"title": {
-		"type": "plain_text",
-		"text": "View jobs",
-		"emoji": True
-	},
-	"close": {
-		"type": "plain_text",
-		"text": "Done",
-		"emoji": True
-	},
-	"blocks": [
-		{
-			"type": "actions",
-			"elements": [
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Add job",
-						"emoji": True
-					},
-					"action_id": "labjob-add"
-				}
-			]
-		}
-	]
+    "type": "modal",
+    "title": {
+        "type": "plain_text",
+        "text": "View jobs",
+        "emoji": True
+    },
+    "close": {
+        "type": "plain_text",
+        "text": "Done",
+        "emoji": True
+    },
+    "blocks": [
+        {
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Add job",
+                        "emoji": True
+                    },
+                    "action_id": "labjob-add"
+                }
+            ]
+        }
+    ]
 }
 
 def build_view_jobs_modal(db_con: sqlite3.Connection):
@@ -226,157 +226,157 @@ def build_view_jobs_modal(db_con: sqlite3.Connection):
         """
     ).fetchall()
     view_modal['blocks'] = [
-		{
-			"type": "section",
-			"text": {
-				"type": "mrkdwn",
-				"text": f"{job['name']} ({job['reminder_name']} by <@{job['assignee']}>)"
-			},
-			"accessory": {
-				"type": "button",
-				"text": {
-					"type": "plain_text",
-					"text": "Edit",
-					"emoji": True
-				},
-				"value": f"{job['id']}",
-				"action_id": "labjob-edit"
-			}
-		} for job in jobs
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"{job['name']} ({job['reminder_name']} by <@{job['assignee']}>)"
+            },
+            "accessory": {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "Edit",
+                    "emoji": True
+                },
+                "value": f"{job['id']}",
+                "action_id": "labjob-edit"
+            }
+        } for job in jobs
     ] + view_modal['blocks']
     return view_modal
 
 EDIT_JOB_MODAL = {
     "callback_id": "labjob-edit-modal",
-	"title": {
-		"type": "plain_text",
-		"text": "Edit job"
-	},
-	"submit": {
-		"type": "plain_text",
-		"text": "Done"
-	},
-	"type": "modal",
-	"blocks": [
-		{
-			"type": "input",
+    "title": {
+        "type": "plain_text",
+        "text": "Edit job"
+    },
+    "submit": {
+        "type": "plain_text",
+        "text": "Done"
+    },
+    "type": "modal",
+    "blocks": [
+        {
+            "type": "input",
             "block_id": "labjob-name",
-			"element": {
-				"type": "plain_text_input",
-				"action_id": "labjob-nameval",
-				"placeholder": {
-					"type": "plain_text",
-					"text": "Enter something. Markdown allowed."
-				}
-			},
-			"label": {
-				"type": "plain_text",
-				"text": "Job description"
-			}
-		},
-		{
-			"type": "section",
+            "element": {
+                "type": "plain_text_input",
+                "action_id": "labjob-nameval",
+                "placeholder": {
+                    "type": "plain_text",
+                    "text": "Enter something. Markdown allowed."
+                }
+            },
+            "label": {
+                "type": "plain_text",
+                "text": "Job description"
+            }
+        },
+        {
+            "type": "section",
             "block_id": "labjob-assignee",
-			"text": {
-				"type": "mrkdwn",
-				"text": "*Assignee*"
-			},
-			"accessory": {
-				"type": "users_select",
-				"placeholder": {
-					"type": "plain_text",
-					"text": "Select a user"
-				},
-				"action_id": "labjob-assigneeval"
-			}
-		},
-		{
-			"type": "input",
+            "text": {
+                "type": "mrkdwn",
+                "text": "*Assignee*"
+            },
+            "accessory": {
+                "type": "users_select",
+                "placeholder": {
+                    "type": "plain_text",
+                    "text": "Select a user"
+                },
+                "action_id": "labjob-assigneeval"
+            }
+        },
+        {
+            "type": "input",
             "block_id": "labjob-sort_priority",
-			"element": {
-				"type": "number_input",
-				"is_decimal_allowed": True,
-				"action_id": "labjob-sort_priorityval"
-			},
-			"label": {
-				"type": "plain_text",
-				"text": "Sort priority"
-			}
-		},
-		{
-			"type": "section",
+            "element": {
+                "type": "number_input",
+                "is_decimal_allowed": True,
+                "action_id": "labjob-sort_priorityval"
+            },
+            "label": {
+                "type": "plain_text",
+                "text": "Sort priority"
+            }
+        },
+        {
+            "type": "section",
             "block_id": "labjob-reminder_schedule",
-			"text": {
-				"type": "mrkdwn",
-				"text": "*Reminder schedule*"
-			},
-			"accessory": {
-				"type": "static_select",
-				"placeholder": {
-					"type": "plain_text",
-					"text": "Select a reminder schedule"
-				},
-				"options": [],
-				"action_id": "labjob-reminder_scheduleval"
-			}
-		},
-		{
-			"type": "divider"
-		},
-		{
-			"type": "section",
-			"text": {
-				"type": "mrkdwn",
-				"text": "*Scheduling*\nPick a schedule for this lab job. You can effectively do anything that e.g. Google Calendar lets you do. I don't have a good GUI, so just use a <https://icalendar.org/rrule-tool.html|RRULE editor> to generate more complicated schedules. The default is weekly on Monday."
-			}
-		},
-		{
-			"type": "input",
+            "text": {
+                "type": "mrkdwn",
+                "text": "*Reminder schedule*"
+            },
+            "accessory": {
+                "type": "static_select",
+                "placeholder": {
+                    "type": "plain_text",
+                    "text": "Select a reminder schedule"
+                },
+                "options": [],
+                "action_id": "labjob-reminder_scheduleval"
+            }
+        },
+        {
+            "type": "divider"
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "*Scheduling*\nPick a schedule for this lab job. You can effectively do anything that e.g. Google Calendar lets you do. I don't have a good GUI, so just use a <https://icalendar.org/rrule-tool.html|RRULE editor> to generate more complicated schedules. The default is weekly on Monday."
+            }
+        },
+        {
+            "type": "input",
             "block_id": "labjob-recurrence",
-			"element": {
-				"type": "plain_text_input",
-				"action_id": "labjob-recurrenceval",
-				"initial_value": "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO"
-			},
-			"label": {
-				"type": "plain_text",
-				"text": "RRULE recurrence rule"
-			}
-		},
-		{
-			"type": "actions",
-			"elements": [
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Delete lab job",
-					},
-					"style": "danger",
-					"value": "",
-					"action_id": "labjob-delete",
-					"confirm": {
-						"title": {
-							"type": "plain_text",
-							"text": "Are you sure?"
-						},
-						"text": {
-							"type": "plain_text",
-							"text": "This will delete future instances of this lab job."
-						},
-						"confirm": {
-							"type": "plain_text",
-							"text": "Delete lab job"
-						},
-						"deny": {
-							"type": "plain_text",
-							"text": "Cancel"
-						}
-					}
-				}
-			]
-		}
-	]
+            "element": {
+                "type": "plain_text_input",
+                "action_id": "labjob-recurrenceval",
+                "initial_value": "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO"
+            },
+            "label": {
+                "type": "plain_text",
+                "text": "RRULE recurrence rule"
+            }
+        },
+        {
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Delete lab job",
+                    },
+                    "style": "danger",
+                    "value": "",
+                    "action_id": "labjob-delete",
+                    "confirm": {
+                        "title": {
+                            "type": "plain_text",
+                            "text": "Are you sure?"
+                        },
+                        "text": {
+                            "type": "plain_text",
+                            "text": "This will delete future instances of this lab job."
+                        },
+                        "confirm": {
+                            "type": "plain_text",
+                            "text": "Delete lab job"
+                        },
+                        "deny": {
+                            "type": "plain_text",
+                            "text": "Cancel"
+                        }
+                    }
+                }
+            ]
+        }
+    ]
 }
 
 def build_edit_job_modal(db_con: sqlite3.Connection, job_id: int):
@@ -384,7 +384,7 @@ def build_edit_job_modal(db_con: sqlite3.Connection, job_id: int):
 
     edit_modal = copy.deepcopy(EDIT_JOB_MODAL)
 
-    job = db_con.execute("SELECT name, sort_priority, reminder_schedule, recurrence, assignee FROM template_jobs WHERE id=?", (job_id,)).fetchone()
+    job = db_con.execute("SELECT name, sort_priority, reminder_schedule, recurrence, assignee FROM template_jobs WHERE id=? ORDER BY sort_priority", (job_id,)).fetchone()
     schedules = db_con.execute("SELECT id, name FROM reminder_schedules").fetchall()
     schedule_option_map = {schedule['id']: {
         "text": {
@@ -410,88 +410,88 @@ def build_edit_job_modal(db_con: sqlite3.Connection, job_id: int):
 
 EDIT_REMINDER_SCHEDULE_MODAL = {
     "callback_id": "reminder_schedule-edit-modal",
-	"title": {
-		"type": "plain_text",
-		"text": "Edit reminder schedule",
-	},
-	"submit": {
-		"type": "plain_text",
-		"text": "Done",
-	},
-	"type": "modal",
-	"blocks": [
-		{
-			"type": "input",
+    "title": {
+        "type": "plain_text",
+        "text": "Edit reminder schedule",
+    },
+    "submit": {
+        "type": "plain_text",
+        "text": "Done",
+    },
+    "type": "modal",
+    "blocks": [
+        {
+            "type": "input",
             "block_id": "reminder_schedule-name",
-			"element": {
-				"type": "plain_text_input",
-				"action_id": "reminder_schedule-nameval",
-				"placeholder": {
-					"type": "plain_text",
-					"text": "Enter a short description"
-				}
-			},
-			"label": {
-				"type": "plain_text",
-				"text": "Reminder schedule name",
-			}
-		},
-		{
-			"type": "divider"
-		},
-		{
-			"type": "section",
-			"text": {
-				"type": "mrkdwn",
-				"text": "Specify a schedule as a series of `delay_time=reminder_time` entries, separated by semicolons. For example, ```0s=1d; 2d=12h; 4d=4h; 1w=1h``` means that after zero seconds (e.g. immediately), reminders are sent every day. After two days, reminders are sent every 12 hours. After four days, reminders are sent every four hours, and so on."
-			}
-		},
-		{
-			"type": "input",
+            "element": {
+                "type": "plain_text_input",
+                "action_id": "reminder_schedule-nameval",
+                "placeholder": {
+                    "type": "plain_text",
+                    "text": "Enter a short description"
+                }
+            },
+            "label": {
+                "type": "plain_text",
+                "text": "Reminder schedule name",
+            }
+        },
+        {
+            "type": "divider"
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "Specify a schedule as a series of `delay_time=reminder_time` entries, separated by semicolons. For example, ```0s=1d; 2d=12h; 4d=4h; 1w=1h``` means that after zero seconds (e.g. immediately), reminders are sent every day. After two days, reminders are sent every 12 hours. After four days, reminders are sent every four hours, and so on."
+            }
+        },
+        {
+            "type": "input",
             "block_id": "reminder_schedule-schedule",
-			"element": {
-				"type": "plain_text_input",
-				"action_id": "reminder_schedule-scheduleval"
-			},
-			"label": {
-				"type": "plain_text",
-				"text": "Reminder schedule",
-			}
-		},
-		{
-			"type": "actions",
-			"elements": [
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Delete reminder schedule",
-					},
-					"style": "danger",
-					"value": "",
-					"action_id": "reminder_schedule-delete",
-					"confirm": {
-						"title": {
-							"type": "plain_text",
-							"text": "Are you sure?"
-						},
-						"text": {
-							"type": "plain_text",
-							"text": "This will stop reminders for any lab jobs using this schedule!"
-						},
-						"confirm": {
-							"type": "plain_text",
-							"text": "Delete reminder schedule"
-						},
-						"deny": {
-							"type": "plain_text",
-							"text": "Cancel"
-						}
-					}
-				}
-			]
-		}
-	]
+            "element": {
+                "type": "plain_text_input",
+                "action_id": "reminder_schedule-scheduleval"
+            },
+            "label": {
+                "type": "plain_text",
+                "text": "Reminder schedule",
+            }
+        },
+        {
+            "type": "actions",
+            "elements": [
+                {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "Delete reminder schedule",
+                    },
+                    "style": "danger",
+                    "value": "",
+                    "action_id": "reminder_schedule-delete",
+                    "confirm": {
+                        "title": {
+                            "type": "plain_text",
+                            "text": "Are you sure?"
+                        },
+                        "text": {
+                            "type": "plain_text",
+                            "text": "This will stop reminders for any lab jobs using this schedule!"
+                        },
+                        "confirm": {
+                            "type": "plain_text",
+                            "text": "Delete reminder schedule"
+                        },
+                        "deny": {
+                            "type": "plain_text",
+                            "text": "Cancel"
+                        }
+                    }
+                }
+            ]
+        }
+    ]
 }
 
 def build_edit_reminder_schedule_modal(db_con: sqlite3.Connection, reminder_schedule_id: int):
@@ -626,6 +626,8 @@ def add_new_jobs(db_con:sqlite3.Connection) -> List[int]:
 
     inserted_rows: List[int] = []
     for job in possible_jobs:
+        if job['assignee'] is None:
+            continue
         # Check the recurrence against today
         next_event: datetime.datetime = rrule.rrulestr(job['recurrence']).after(now, inc=True)
         if next_event.date == now.date:
@@ -662,6 +664,8 @@ def send_reminders(db_con:sqlite3.Connection, new_jobs: List[int]):
 
     possible_jobs = db_con.execute("SELECT id, due_ts, last_reminder_ts, reminder_schedule, assignee FROM jobs WHERE done=0").fetchall()
     for job in possible_jobs:
+        if job['assignee'] is None:
+            return
         due_time_delta = now - datetime.datetime.fromisoformat(job['due_ts'])
         reminder_time_delta = now - datetime.datetime.fromisoformat(job['last_reminder_ts'])
 
@@ -734,11 +738,31 @@ def add_reminder_schedule(ack, body, client):
 @loader.slack.action({"action_id": "reminder_schedule-edit"})
 def edit_reminder_schedule(ack, body, client):
     ack()
+
+    db_con = sqlite3.connect('labjobs.db')
+    db_con.row_factory = sqlite3.Row
+
+    db_con.execute("""
+        INSERT INTO reminder_schedules (name, reminders)
+        VALUES ("Unnamed", "")
+    """)
+    db_con.close()
+
     module_config['logger'](body['actions'])
 
 @loader.slack.action({"action_id": "labjob-add"})
 def add_labjob(ack, body, client):
     ack()
+
+    db_con = sqlite3.connect('labjobs.db')
+    db_con.row_factory = sqlite3.Row
+
+    db_con.execute("""
+        INSERT INTO template_jobs (sort_priority, name, last_generated_ts, recurrence)
+        VALUES (0, "Unnamed", "1970-01-01", "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO")
+    """)
+    db_con.close()
+
     module_config['logger'](body['actions'])
 
 @loader.slack.view("labjob-edit-modal")
