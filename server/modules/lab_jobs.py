@@ -406,7 +406,7 @@ def build_edit_job_modal(db_con: sqlite3.Connection, job_id: int, prev_view: str
     # Fill in reminder schedule options
     edit_modal['blocks'][3]['accessory']['options'] = list(schedule_option_map.values())
     if job['reminder_schedule'] is not None:
-        edit_modal['blocks'][3]['accessory']['initial_option'] = schedule_option_map[job['id']]
+        edit_modal['blocks'][3]['accessory']['initial_option'] = schedule_option_map[job['reminder_schedule']]
     
     edit_modal['blocks'][6]['element']['initial_value'] = job['recurrence']
     edit_modal['blocks'][7]['elements'][0]['value'] = str(job_id)
@@ -641,7 +641,7 @@ def add_new_jobs(db_con:sqlite3.Connection) -> List[int]:
         if job['assignee'] is None:
             continue
         # Check the recurrence against today
-        next_event: datetime.datetime = rrule.rrulestr(job['recurrence']).after(now, inc=True)
+        next_event: datetime.datetime = rrule.rrulestr(job['recurrence']).after(now, inc=True).replace(tzinfo=ET)
         if next_event.date == now.date:
             # Generate an event
             cur = db_con.execute(
