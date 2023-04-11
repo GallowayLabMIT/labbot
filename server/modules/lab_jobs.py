@@ -398,7 +398,7 @@ def build_edit_job_modal(db_con: sqlite3.Connection, job_id: int):
     edit_modal['blocks'][0]['element']['initial_value'] = job['name']
     if job['assignee'] is not None:
         edit_modal['blocks'][1]['accessory']['initial_user'] = job['assignee']
-    edit_modal['blocks'][2]['element']['initial_value'] = job['sort_priority']
+    edit_modal['blocks'][2]['element']['initial_value'] = str(job['sort_priority'])
     # Fill in reminder schedule options
     edit_modal['blocks'][3]['accessory']['options'] = list(schedule_option_map.values())
     if job['reminder_schedule'] is not None:
@@ -768,6 +768,17 @@ def edit_reminder_schedule(ack, body, client):
     )
     db_con.close()
 
+@loader.slack.view("reminder_schedule-edit-modal")
+def edit_reminder_schedule(ack, body, client, view):
+    ack()
+    module_config['logger'](body)
+
+@loader.slack.action({"action_id": "reminder_schedule-delete"})
+def delete_reminder_schedule(ack, body, client):
+    ack()
+
+    module_config['logger'](body)
+
 
 @loader.slack.action({"action_id": "labjob-add"})
 def add_labjob(ack, body, client):
@@ -810,10 +821,13 @@ def edit_labjob(ack, body, client, view):
     ack()
     module_config['logger'](body)
 
-@loader.slack.view("reminder_schedule-edit-modal")
-def edit_reminder_schedule(ack, body, client, view):
+@loader.slack.action({"action_id": "labjob-delete"})
+def delete_labjob(ack, body, client):
     ack()
+
     module_config['logger'](body)
+
+
 
 @loader.slack.action({"action_id": "labjob-view"})
 def show_labjob_view_modal(ack, body, client):
