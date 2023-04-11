@@ -26,7 +26,7 @@ REMINDER_MESSAGE = [
         "type": "section",
         "text": {
             "type": "mrkdwn",
-            "text": "{job_name}\n<!date^{due_ts}^Due {{date_long_pretty}}|{fallback_ts}>\n_If you are unable to do your job this time, reassign it to someone who can after confirming with them_"
+            "text": "Lab job: {job_name}\n<!date^{due_ts}^Due {{date_long_pretty}}|{fallback_ts}>\n_If you are unable to do your job this time, reassign it to someone who can after confirming with them_"
         }
     },
     {
@@ -56,15 +56,49 @@ REMINDER_MESSAGE = [
     }
 ]
 
+REMINDER_COMPLETE_MESSAGE = [
+    {
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": "Lab job: {job_name} complete!\n<!date^{due_ts}^Due {{date_long_pretty}}|{fallback_ts}>"
+        }
+    }
+]
+
+REMINDER_REASSIGNED_MESSAGE = [
+    {
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": "Lab job: {job_name} reassigned to <@{assignee}>"
+        }
+    }
+]
+
 def build_reminder_message(job_id: int, job_name: str, due: datetime.datetime):
     message = copy.deepcopy(REMINDER_MESSAGE)
     message[0]['text']['text'] = message[0]['text']['text'].format(
         job_name=job_name,
-        due_ts=due.timestamp(),
+        due_ts=int(due.timestamp()),
         fallback_ts=f'Due {due.isoformat()}'
     )
     message[1]['elements'][0]['value'] = str(job_id)
     message[1]['elements'][1]['value'] = str(job_id)
+    return message
+
+def build_completed_message(job_name: str, due: datetime.datetime):
+    message = copy.deepcopy(REMINDER_COMPLETE_MESSAGE)
+    message[0]['text']['text'] = message[0]['text']['text'].format(
+        job_name=job_name, due_ts=int(due.timestamp()), fallback_ts=f'Due {due.isoformat()}'
+    )
+    return message
+
+def build_reassigned_message(job_name: str, assignee: str):
+    message = copy.deepcopy(REMINDER_REASSIGNED_MESSAGE)
+    message[0]['text']['text'] = message[0]['text']['text'].format(
+        job_name=job_name, assignee=assignee
+    )
     return message
 
 REASSIGN_MODAL = {
@@ -616,6 +650,7 @@ def register_module(config):
         db_con.execute('''
         CREATE TABLE IF NOT EXISTS reminder_messages (
             job_id integer NOT NULL,
+            channel text NOT NULL,
             slack_message_ts text NOT NULL,
             FOREIGN KEY (job_id)
                 REFERENCES jobs (id)
@@ -697,7 +732,10 @@ def send_reminders(db_con:sqlite3.Connection, new_jobs: List[int]):
         )
 
         # Track the new message and set the last reminder timestamp properly
-        db_con.execute("INSERT INTO reminder_messages (job_id, slack_message_ts) VALUES (?,?)", (job_id, new_message['ts']))
+        db_con.execute(
+            "INSERT INTO reminder_messages (job_id, channel, slack_message_ts) VALUES (?,?,?)",
+            (job_id, job['assignee'], new_message['ts'])
+        )
         db_con.execute("UPDATE jobs SET last_reminder_ts=? WHERE id=?", (now.isoformat(),job_id))
 
 @loader.timer
@@ -735,9 +773,39 @@ def lab_job_home_tab(_user):
     db_con.close()
     return home_tab_blocks
 
+@loader.slack.action({"action_id": "labjob-complete"})
+def complete_labjob(ack, body, client):
+    """Completes the given lab job, updating all messages."""
+    ack()
+    db_con = sqlite3.connect('labjobs.db')
+    db_con.row_factory = sqlite3.Row
+
+    job_id = int(body['actions'][0]['value'])
+    db_con.execute("UPDATE jobs SET done=1 WHERE id=?", (job_id,))
+    db_con.commit()
+    job = db_con.execute("SELECT name, due_ts FROM jobs WHERE id=?", (job_id,)).fetchone()
+    reminders = db_con.execute("SELECT channel, slack_message_ts FROM reminder_messages WHERE job_id=?", (job_id,)).fetchall()
+    for reminder in reminders:
+        client.chat_update(
+            channel=reminder['channel'],
+            ts=reminder['slack_message_ts'],
+            blocks=build_completed_message(job['name'], datetime.datetime.fromisoformat(job['due_ts']))
+        )
+    db_con.close()
+
 @loader.slack.action({"action_id": "labjob-reassign"})
 def show_reassign_modal(ack, body, client):
     ack()
+
+    db_con = sqlite3.connect('labjobs.db')
+    db_con.row_factory = sqlite3.Row
+
+    client.views_open(
+        view=build_reassign_modal(db_con),
+        trigger_id=body['trigger_id']
+    )
+
+    db_con.close()
 
     module_config['logger'](body['actions'])
 
