@@ -502,7 +502,7 @@ EDIT_REMINDER_SCHEDULE_MODAL = {
     ]
 }
 
-def build_edit_reminder_schedule_modal(db_con: sqlite3.Connection, reminder_schedule_id: int):
+def build_edit_reminder_schedule_modal(db_con: sqlite3.Connection, reminder_schedule_id: int, source_view: str):
     """Returns the edit job modal"""
 
     edit_modal = copy.deepcopy(EDIT_REMINDER_SCHEDULE_MODAL)
@@ -512,6 +512,7 @@ def build_edit_reminder_schedule_modal(db_con: sqlite3.Connection, reminder_sche
     edit_modal['blocks'][0]['element']['initial_value'] = schedule['name']
     edit_modal['blocks'][3]['element']['initial_value'] = schedule['reminders']
     edit_modal['blocks'][4]['elements'][0]['value'] = str(reminder_schedule_id)
+    edit_modal['private_metadata'] = f'{reminder_schedule_id};{source_view}'
     return edit_modal
 
 JOB_HOME = [
@@ -780,21 +781,24 @@ def edit_reminder_schedule(ack, body, client):
 def edit_reminder_schedule_modal(ack, body, client, view):
     ack()
 
+    metadata_split = view['private_metadata'].split(';')
+    schedule_id = int(metadata_split[0])
+    prev_view_id = metadata_split[1]
     name = view['state']['values']['reminder_schedule-name']['reminder_schedule-nameval']['value']
     reminders = view['state']['values']['reminder_schedule-schedule']['reminder_schedule-scheduleval']['value']
     module_config['logger'](f'Schedule update: {name},{reminders}')
     db_con = sqlite3.connect('labjobs.db')
     db_con.row_factory = sqlite3.Row
     db_con.execute("""
-        INSERT INTO reminder_schedules
-        (name, reminders)
-        VALUES (?, ?)
-    """, (name, reminders))
+        UPDATE reminder_schedules
+        name=?, reminders=?
+        WHERE id=?
+    """, (name, reminders, schedule_id))
     db_con.commit()
 
     client.views_update(
         view=build_view_jobs_modal(db_con),
-        view_id=body['container']['view_id']
+        view_id=prev_view_id
     )
     db_con.close()
 
