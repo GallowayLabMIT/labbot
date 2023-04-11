@@ -157,10 +157,11 @@ REASSIGN_MODAL = {
 def build_reassign_modal(job_id: int, job_name: str, due: datetime.datetime):
     modal = copy.deepcopy(REASSIGN_MODAL)
     modal['blocks'][0]['text']['text'] = modal['blocks'][0]['text']['text'].format(
-        job_name=job_name,
+        lab_job=job_name,
         due_ts=due.timestamp(),
         fallback_ts=f'Due {due.isoformat()}'
     )
+    modal['private_metadata'] = str(job_id)
     return modal
 
 VIEW_REMINDER_SCHEDULE_MODAL = {
@@ -734,7 +735,7 @@ def send_reminders(db_con:sqlite3.Connection, new_jobs: List[int]):
         # Track the new message and set the last reminder timestamp properly
         db_con.execute(
             "INSERT INTO reminder_messages (job_id, channel, slack_message_ts) VALUES (?,?,?)",
-            (job_id, job['assignee'], new_message['ts'])
+            (job_id, new_message['channel'], new_message['ts'])
         )
         db_con.execute("UPDATE jobs SET last_reminder_ts=? WHERE id=?", (now.isoformat(),job_id))
     db_con.commit()
