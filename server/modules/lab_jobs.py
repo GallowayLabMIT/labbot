@@ -867,8 +867,7 @@ def edit_labjob(ack, body, client, view):
     name = view['state']['values']['labjob-name']['labjob-nameval']['value']
     assignee = view['state']['values']['labjob-assignee']['labjob-assigneeval']['selected_user']
     sort_priority = int(view['state']['values']['labjob-sort_priority']['labjob-sort_priorityval']['value'])
-    module_config['logger'](view['state']['values']['labjob-reminder_schedule']['labjob-reminder_scheduleval'])
-    reminder_schedule = int(view['state']['values']['labjob-reminder_schedule']['labjob-reminder_scheduleval']['value'])
+    reminder_schedule = int(view['state']['values']['labjob-reminder_schedule']['labjob-reminder_scheduleval']['selected_option']['value'])
     recurrence = view['state']['values']['labjob-recurrence']['labjob-recurrenceval']['value']
     module_config['logger'](f'Job update: {name},{assignee},{sort_priority},{reminder_schedule},{recurrence}')
     db_con = sqlite3.connect('labjobs.db')
