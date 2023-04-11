@@ -642,7 +642,7 @@ def add_new_jobs(db_con:sqlite3.Connection) -> List[int]:
         if job['assignee'] is None:
             continue
         # Check the recurrence against today
-        next_event: datetime.datetime = rrule.rrulestr(job['recurrence']).after(now, inc=True).replace(tzinfo=ET)
+        next_event: datetime.datetime = rrule.rrulestr(job['recurrence']).after(now.replace(tzinfo=None), inc=True).replace(tzinfo=ET)
         if next_event.date == now.date:
             # Generate an event
             cur = db_con.execute(
