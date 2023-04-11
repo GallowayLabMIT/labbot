@@ -793,6 +793,7 @@ def complete_labjob(ack, body, client):
             ts=reminder['slack_message_ts'],
             blocks=build_completed_message(job['name'], datetime.datetime.fromisoformat(job['due_ts']))
         )
+    db_con.commit()
     db_con.close()
 
 @loader.slack.action({"action_id": "labjob-reassign"})
