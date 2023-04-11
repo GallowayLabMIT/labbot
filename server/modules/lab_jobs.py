@@ -865,8 +865,7 @@ def edit_labjob(ack, body, client, view):
     job_id = int(metadata_split[0])
     prev_view = metadata_split[1]
     name = view['state']['values']['labjob-name']['labjob-nameval']['value']
-    module_config['logger'](view['state']['values']['labjob-assignee']['labjob-assigneeval'])
-    assignee = view['state']['values']['labjob-assignee']['labjob-assigneeval']['value']
+    assignee = view['state']['values']['labjob-assignee']['labjob-assigneeval']['selected_user']
     sort_priority = int(view['state']['values']['labjob-sort_priority']['labjob-sort_priorityval']['value'])
     module_config['logger'](view['state']['values']['labjob-reminder_schedule']['labjob-reminder_scheduleval'])
     reminder_schedule = int(view['state']['values']['labjob-reminder_schedule']['labjob-reminder_scheduleval']['value'])
