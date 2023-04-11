@@ -780,8 +780,8 @@ def edit_reminder_schedule(ack, body, client):
 def edit_reminder_schedule_modal(ack, body, client, view):
     ack()
 
-    name = view['state']['values']['reminder_schedule-name']['reminder_schedule-nameval']
-    reminders = view['state']['values']['reminder_schedule-schedule']['reminder_schedule-scheduleval']
+    name = view['state']['values']['reminder_schedule-name']['reminder_schedule-nameval']['value']
+    reminders = view['state']['values']['reminder_schedule-schedule']['reminder_schedule-scheduleval']['value']
     module_config['logger'](f'Schedule update: {name},{reminders}')
     db_con = sqlite3.connect('labjobs.db')
     db_con.row_factory = sqlite3.Row
@@ -855,7 +855,7 @@ def edit_labjob(ack, body, client, view):
     ack()
 
     name = view['state']['values']['labjob-name']['labjob-nameval']
-    assignee = view['state']['values']['labjob-assignee']['labjob-asigneeval']
+    assignee = view['state']['values']['labjob-assignee']['labjob-assigneeval']
     sort_priority = int(view['state']['values']['labjob-sort_priority']['labjob-sort_priorityval'])
     reminder_schedule = int(view['state']['values']['labjob-reminder_schedule']['labjob-reminder_scheduleval'])
     recurrence = view['state']['values']['labjob-recurrence']['labjob-recurrenceval']
