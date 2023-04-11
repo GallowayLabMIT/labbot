@@ -829,7 +829,7 @@ def reassign_labjob(ack, body, client, view):
     db_con.execute("UPDATE jobs SET assignee=? WHERE id=?", (new_assignee, job_id))
     db_con.commit()
     # Send message updates
-    job = db_con.execute("SELECT name, due_ts FROM jobs WHERE id=?", (job_id,)).fetchone()
+    job = db_con.execute("SELECT name, due_ts, assignee FROM jobs WHERE id=?", (job_id,)).fetchone()
     reminders = db_con.execute("SELECT channel, slack_message_ts FROM reminder_messages WHERE job_id=?", (job_id,)).fetchall()
     for reminder in reminders:
         client.chat_update(
