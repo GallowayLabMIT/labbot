@@ -780,6 +780,7 @@ def delete_reminder_schedule(ack, body, client):
     # NULL out any template jobs and jobs that reference this schedule
     schedule_id = int(body['actions'][0]['value'])
     db_con = sqlite3.connect('labjobs.db')
+    db_con.row_factory = sqlite3.Row
     db_con.execute("UPDATE template_jobs SET reminder_schedule=NULL WHERE reminder_schedule=?", (schedule_id,))
     db_con.execute("UPDATE jobs SET reminder_schedule=NULL WHERE reminder_schedule=?", (schedule_id,))
     db_con.execute("DELETE FROM reminder_schedules WHERE id=?", (schedule_id,))
@@ -836,7 +837,8 @@ def delete_labjob(ack, body, client):
 
     labjob_id = int(body['actions'][0]['value'])
     db_con = sqlite3.connect('labjobs.db')
-    db_con.execute("DELETE FROM template_labjobs WHERE id=?", (labjob_id,))
+    db_con.row_factory = sqlite3.Row
+    db_con.execute("DELETE FROM template_jobs WHERE id=?", (labjob_id,))
     db_con.commit()
 
     client.views_update(
