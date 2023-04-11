@@ -734,11 +734,6 @@ def reassign_labjob(ack, body, client, view):
 @loader.slack.action({"action_id": "reminder_schedule-add"})
 def add_reminder_schedule(ack, body, client):
     ack()
-    module_config['logger'](body['actions'])
-
-@loader.slack.action({"action_id": "reminder_schedule-edit"})
-def edit_reminder_schedule(ack, body, client):
-    ack()
 
     db_con = sqlite3.connect('labjobs.db')
     db_con.row_factory = sqlite3.Row
@@ -748,7 +743,19 @@ def edit_reminder_schedule(ack, body, client):
         VALUES ("Unnamed", "")
     """)
     db_con.commit()
+
+    client.views_update(
+        view=build_reminder_schedule_modal(db_con),
+        view_id=body['container']['view_id']
+    )
+
     db_con.close()
+
+    module_config['logger'](body)
+
+@loader.slack.action({"action_id": "reminder_schedule-edit"})
+def edit_reminder_schedule(ack, body, client):
+    ack()
 
     module_config['logger'](body)
 
@@ -764,10 +771,20 @@ def add_labjob(ack, body, client):
         VALUES (0, "Unnamed", "1970-01-01", "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO")
     """)
     db_con.commit()
+
+    client.views_update(
+        view=build_view_jobs_modal(db_con),
+        view_id=body['container']['view_id']
+    )
+
     db_con.close()
 
 
     module_config['logger'](body)
+
+@loader.slack.action({"action_id": "labjob-edit"})
+def edit_labjob(ack, body, client):
+    ack()
 
 @loader.slack.view("labjob-edit-modal")
 def edit_labjob(ack, body, client, view):
