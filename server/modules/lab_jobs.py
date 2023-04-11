@@ -103,7 +103,7 @@ REASSIGN_MODAL = {
 		},
 		{
 			"type": "section",
-            "block_id": "userselect"
+            "block_id": "userselect",
 			"text": {
 				"type": "mrkdwn",
 				"text": "Reassign this occurrence to:"
