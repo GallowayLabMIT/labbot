@@ -124,7 +124,7 @@ REASSIGN_MODAL = {
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": "{lab_job}\n<!date^{due_ts}^Posted {{date_long_pretty}}|{fallback_ts}>"
+                "text": "{lab_job}\n<!date^{due_ts}^Due {{date_long_pretty}}|{fallback_ts}>"
             }
         },
         {
@@ -679,7 +679,6 @@ def add_new_jobs(db_con:sqlite3.Connection) -> List[int]:
             continue
         # Check the recurrence against today
         next_event: datetime.datetime = rrule.rrulestr(job['recurrence']).after(now.replace(tzinfo=None), inc=True)
-        module_config['logger'](f'Next event for {job["name"]}: {next_event.date().isoformat()} with last_ts: {job["last_generated_ts"]}')
         if next_event.date() == now.date():
             # Generate an event
             cur = db_con.execute(
@@ -779,7 +778,6 @@ def lab_job_home_tab(_user):
 def complete_labjob(ack, body, client):
     """Completes the given lab job, updating all messages."""
     ack()
-    module_config['logger'](body)
     db_con = sqlite3.connect('labjobs.db')
     db_con.row_factory = sqlite3.Row
 
@@ -789,7 +787,6 @@ def complete_labjob(ack, body, client):
     job = db_con.execute("SELECT name, due_ts FROM jobs WHERE id=?", (job_id,)).fetchone()
     reminders = db_con.execute("SELECT channel, slack_message_ts FROM reminder_messages WHERE job_id=?", (job_id,)).fetchall()
     for reminder in reminders:
-        module_config['logger'](reminder)
         client.chat_update(
             channel=reminder['channel'],
             ts=reminder['slack_message_ts'],
@@ -814,12 +811,9 @@ def show_reassign_modal(ack, body, client):
 
     db_con.close()
 
-    module_config['logger'](body['actions'])
-
 @loader.slack.view("labjob-reassign-modal")
 def reassign_labjob(ack, body, client, view):
     ack()
-    module_config['logger'](body)
 
     new_assignee = view['state']['values']['userselect']['userselectval']['selected_user']
     job_id = int(view['private_metadata'])
@@ -875,13 +869,9 @@ def add_reminder_schedule(ack, body, client):
 
     db_con.close()
 
-    module_config['logger'](body)
-
 @loader.slack.action({"action_id": "reminder_schedule-edit"})
 def edit_reminder_schedule(ack, body, client):
     ack()
-
-    module_config['logger'](body)
 
     db_con = sqlite3.connect('labjobs.db')
     db_con.row_factory = sqlite3.Row
@@ -960,7 +950,6 @@ def add_labjob(ack, body, client):
 def edit_labjob(ack, body, client):
     ack()
     
-    module_config['logger'](body)
     db_con = sqlite3.connect('labjobs.db')
     db_con.row_factory = sqlite3.Row
     client.views_push(
