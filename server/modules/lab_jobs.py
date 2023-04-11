@@ -864,11 +864,11 @@ def edit_labjob(ack, body, client, view):
     metadata_split = view['private_metadata'].split(';')
     job_id = int(metadata_split[0])
     prev_view = metadata_split[1]
-    name = view['state']['values']['labjob-name']['labjob-nameval']
-    assignee = view['state']['values']['labjob-assignee']['labjob-assigneeval']
-    sort_priority = int(view['state']['values']['labjob-sort_priority']['labjob-sort_priorityval'])
-    reminder_schedule = int(view['state']['values']['labjob-reminder_schedule']['labjob-reminder_scheduleval'])
-    recurrence = view['state']['values']['labjob-recurrence']['labjob-recurrenceval']
+    name = view['state']['values']['labjob-name']['labjob-nameval']['value']
+    assignee = view['state']['values']['labjob-assignee']['labjob-assigneeval']['value']
+    sort_priority = int(view['state']['values']['labjob-sort_priority']['labjob-sort_priorityval']['value'])
+    reminder_schedule = int(view['state']['values']['labjob-reminder_schedule']['labjob-reminder_scheduleval']['value'])
+    recurrence = view['state']['values']['labjob-recurrence']['labjob-recurrenceval']['value']
     module_config['logger'](f'Job update: {name},{assignee},{sort_priority},{reminder_schedule},{recurrence}')
     db_con = sqlite3.connect('labjobs.db')
     db_con.row_factory = sqlite3.Row
