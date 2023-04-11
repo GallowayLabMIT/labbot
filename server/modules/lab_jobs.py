@@ -143,6 +143,7 @@ VIEW_REMINDER_SCHEDULE_MODAL = {
         "text": "Done",
         "emoji": True
     },
+    "clear_on_close": True,
     "blocks": [
         {
             "type": "actions",
@@ -198,6 +199,7 @@ VIEW_JOBS_MODAL = {
         "text": "Done",
         "emoji": True
     },
+    "clear_on_close": True,
     "blocks": [
         {
             "type": "actions",
@@ -643,6 +645,7 @@ def add_new_jobs(db_con:sqlite3.Connection) -> List[int]:
             continue
         # Check the recurrence against today
         next_event: datetime.datetime = rrule.rrulestr(job['recurrence']).after(now.replace(tzinfo=None), inc=True).replace(tzinfo=ET)
+        module_config['logger'](f'Next event for {job["name"]}: {next_event.isoformat()}')
         if next_event.date == now.date:
             # Generate an event
             cur = db_con.execute(
@@ -801,7 +804,7 @@ def edit_reminder_schedule_modal(ack, body, client, view):
     db_con.commit()
 
     client.views_update(
-        view=build_view_jobs_modal(db_con),
+        view=build_reminder_schedule_modal(db_con),
         view_id=prev_view_id
     )
     db_con.close()
