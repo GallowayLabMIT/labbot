@@ -737,6 +737,7 @@ def send_reminders(db_con:sqlite3.Connection, new_jobs: List[int]):
             (job_id, job['assignee'], new_message['ts'])
         )
         db_con.execute("UPDATE jobs SET last_reminder_ts=? WHERE id=?", (now.isoformat(),job_id))
+    db_con.commit()
 
 @loader.timer
 def check_jobs_reminders(_):
@@ -793,7 +794,6 @@ def complete_labjob(ack, body, client):
             ts=reminder['slack_message_ts'],
             blocks=build_completed_message(job['name'], datetime.datetime.fromisoformat(job['due_ts']))
         )
-    db_con.commit()
     db_con.close()
 
 @loader.slack.action({"action_id": "labjob-reassign"})
