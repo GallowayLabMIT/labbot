@@ -786,6 +786,7 @@ def complete_labjob(ack, body, client):
     job = db_con.execute("SELECT name, due_ts FROM jobs WHERE id=?", (job_id,)).fetchone()
     reminders = db_con.execute("SELECT channel, slack_message_ts FROM reminder_messages WHERE job_id=?", (job_id,)).fetchall()
     for reminder in reminders:
+        module_config['logger'](reminder)
         client.chat_update(
             channel=reminder['channel'],
             ts=reminder['slack_message_ts'],
