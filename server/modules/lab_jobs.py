@@ -975,7 +975,7 @@ def edit_labjob(ack, body, client, view):
     db_con.row_factory = sqlite3.Row
     db_con.execute("""
         UPDATE template_jobs
-        SET sort_priority=?, name=?, last_generated_ts="1970-01-01", reminder_schedule=?, recurrence=?, assignee=?
+        SET sort_priority=?, name=?, reminder_schedule=?, recurrence=?, assignee=?
         WHERE id=?
     """, (sort_priority, name, reminder_schedule, recurrence, assignee, job_id))
     db_con.commit()
