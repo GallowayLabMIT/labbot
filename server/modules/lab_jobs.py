@@ -257,8 +257,9 @@ def build_view_jobs_modal(db_con: sqlite3.Connection):
     view_modal = copy.deepcopy(VIEW_JOBS_MODAL)
 
     jobs = db_con.execute("""
-        SELECT template_jobs.id, template_jobs.name, template_jobs.assignee, reminder_schedules.name AS reminder_name
+        SELECT template_jobs.id, template_jobs.sort_priority, template_jobs.name, template_jobs.assignee, reminder_schedules.name AS reminder_name
         FROM template_jobs LEFT JOIN reminder_schedules ON template_jobs.reminder_schedule=reminder_schedules.id
+        ORDER BY template_jobs.sort_priority DESC
         """
     ).fetchall()
     view_modal['blocks'] = [
