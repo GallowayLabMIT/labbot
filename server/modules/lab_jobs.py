@@ -751,7 +751,7 @@ def check_jobs_reminders(_):
     except (Exception, OSError) as e:
         stacktrace = '\n'.join(traceback.TracebackException.from_exception(e).format())
         module_config['logger'](f'Got exception while running reminders: {e}\nStacktrace: {stacktrace}')
-    return 30 * 1
+    return 60 * 5
 
 @loader.home_tab
 def lab_job_home_tab(_user):
