@@ -669,7 +669,7 @@ def add_new_jobs(db_con:sqlite3.Connection) -> List[int]:
     """
     now = datetime.datetime.now(ET)
     # Only do the check after 9am
-    if now.hour <= 9:
+    if now.hour < 9:
         return []
     today: str = datetime.date.today().isoformat()
     possible_jobs = db_con.execute("SELECT id, name, reminder_schedule, recurrence, assignee, last_generated_ts FROM template_jobs WHERE last_generated_ts<?;", (today,)).fetchall()
