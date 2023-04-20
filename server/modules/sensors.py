@@ -247,7 +247,7 @@ def check_status_alerts(db_con:sqlite3.Connection, perform_hometab_update:bool=T
             # Collect sensor readings. Ensure that we always take at least one measurement, and take until we are beyond the heartbeat limit
             measurements : List[Measurement] = []
             now = datetime.datetime.now(datetime.timezone.utc)
-            heartbeat_cutoff = now - datetime.timedelta(seconds=limits['heartbeat_timeout_sec']) + datetime.timedelta(days=5)
+            heartbeat_cutoff = now - datetime.timedelta(seconds=limits['heartbeat_timeout_sec']) - datetime.timedelta(days=5)
             alarm_cutoff = now - datetime.timedelta(seconds=limits['time_to_alarm_sec'])
             for row in cursor:
                 cur_m = Measurement(timestamp=datetime.datetime.fromisoformat(row[0]), measurement=row[1])
