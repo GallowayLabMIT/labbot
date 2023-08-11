@@ -280,6 +280,7 @@ webserver_config = uvicorn.Config(
         loop='uvloop')
 
 server = WebServer(webserver_config)
+server.force_exit = True
 
 with server.run_in_thread():
     should_shutdown.acquire()
