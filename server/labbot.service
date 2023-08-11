@@ -1,8 +1,11 @@
 [Unit]
 Description=Labbot server
-After=mutli-user.target
+Requires=multi-user.target
 
 [Service]
 Type=simple
 ExecStart=/home/meson800/labbot/server/env/bin/python -m labbot
 WorkingDirectory=/home/meson800/labbot/server
+
+[Install]
+WantedBy=multi-user.target
