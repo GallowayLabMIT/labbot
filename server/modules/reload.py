@@ -45,7 +45,7 @@ def dev_tools_home_tab(user):
 
 @loader.timer
 def print_startup(client):
-    commit_msg = subprocess.run(['git', 'log', '-1', '--pretty=%B'], capture_output=True)
+    commit_msg = subprocess.run(['/usr/bin/env', 'git', 'log', '-1', '--pretty=%B'], capture_output=True)
     client.chat_postMessage(
             channel='#labbot_debug',
             text=':wave: Labbot starting on {}\n```{}```'.format(
@@ -57,22 +57,22 @@ def get_branch(name='HEAD'):
     """
     Returns a summary of the current HEAD git state
     """
-    branch_name = subprocess.run(['git', 'rev-parse', '--abbrev-ref', name], capture_output=True).stdout.decode('utf-8').strip('\n')
+    branch_name = subprocess.run(['/usr/bin/env', 'git', 'rev-parse', '--abbrev-ref', name], capture_output=True).stdout.decode('utf-8').strip('\n')
 
     if branch_name == 'HEAD':
-        all_names = subprocess.run(['git', 'show', '-s', '--pretty=%D', name], capture_output = True)
+        all_names = subprocess.run(['/usr/bin/env', 'git', 'show', '-s', '--pretty=%D', name], capture_output = True)
         match = re.search(module_config['remote_name'] + r"/([^,\s]+)", all_names.stdout.decode('utf-8'))
         if match is not None:
             branch_name = match.group(1)
-    commit_name = subprocess.run(['git', 'rev-parse', '--short', name], capture_output=True).stdout.decode('utf-8').strip('\n')
+    commit_name = subprocess.run(['/usr/bin/env', 'git', 'rev-parse', '--short', name], capture_output=True).stdout.decode('utf-8').strip('\n')
     return '{}({})'.format(branch_name, commit_name)
 
 def validate_git_commits(branch_name):
     """
     Verifies that the specified branch does not have changes to the setup.py
     """
-    pull_result = subprocess.run(['git', 'fetch', module_config['remote_name'], '--tags'])
-    result = subprocess.run(['git', 'diff', 'HEAD', '{}/{}'.format(module_config['remote_name'],branch_name),
+    pull_result = subprocess.run(['/usr/bin/env', 'git', 'fetch', module_config['remote_name'], '--tags'])
+    result = subprocess.run(['/usr/bin/env', 'git', 'diff', 'HEAD', '{}/{}'.format(module_config['remote_name'],branch_name),
         '--exit-code', '-s', module_config['setup_py_path']])
 
     return result.returncode == 0
