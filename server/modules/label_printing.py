@@ -400,7 +400,7 @@ class DequeueRequest(BaseModel):
     token: str
 
 @loader.fastapi.post("/labels/dequeue")
-async def dequeue_labels(req:DequeueRequest):
+def dequeue_labels(req:DequeueRequest):
     if (req.token != module_config['token']):
         raise HTTPException(status_code=401, detail="Invalid auth token")
 

@@ -276,6 +276,7 @@ webserver_config = uvicorn.Config(
         api,
         host='localhost',
         port=secrets['global']['port'],
+        workers=4,
         loop='uvloop')
 
 server = WebServer(webserver_config)
