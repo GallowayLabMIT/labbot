@@ -4,7 +4,6 @@ Module that tracks various in-lab sensors using MQTT and iMonnit.
 from labbot.module_loader import ModuleLoader
 import fastapi 
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-import paho.mqtt.client as mqtt
 from pydantic import BaseModel
 import typing
 import sqlite3
@@ -60,23 +59,6 @@ module_config = {}
 
 loader = ModuleLoader()
 
-mqtt_client = mqtt.Client()
-
-
-def on_connect(client, _, flags, rc):
-    client.subscribe('status/request')
-
-def on_message(client, userdata, msg):
-    db_con = sqlite3.connect('sensors.db')
-    with db_con:
-        db_con.execute("INSERT INTO mqtt_log(timestamp, action) VALUES (?,?)",(
-            datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "receive:request"
-        ))
-    if msg.topic == 'status/request':
-        check_status_alerts(db_con)
-    db_con.close()
-
 def register_module(config):
     # Override defaults if present 
     module_config.update(config)
@@ -84,30 +66,12 @@ def register_module(config):
     # Check for token secret
     if 'iMonnit_webhook' not in module_config or 'username' not in module_config['iMonnit_webhook'] or 'password' not in module_config['iMonnit_webhook']:
         raise RuntimeError("Expected the iMonnit webhook username/password to be passed as a dictionary {'username': 'foo', 'password': 'bar'} to key 'iMonnit_webhook'!")
-    if 'mqtt' not in module_config:
-        raise RuntimeError("Expected to be passed MQTT configuration information in key 'mqtt'!")
-    if 'username' not in module_config['mqtt'] or 'password' not in module_config['mqtt']:
-        raise RuntimeError("Expected to be passed client credentials in keys 'username' and 'password' under 'mqtt'!")
-    if 'url' not in module_config['mqtt'] or 'port' not in module_config['mqtt']:
-        raise RuntimeError("Expected to be passed broker location ('url' and 'port') in key 'mqtt'!")
-    if 'client_id' not in module_config['mqtt']:
-        raise RuntimeError("Expected to be passed a persistant client ID ('client_id') in key 'mqtt'!")
     if 'sensor_limits' not in module_config:
         raise RuntimeError("Expected to have sensor critical levels set in key 'sensor_limits'!")
     if 'channel_id' not in module_config:
         raise RuntimeError("Expected to have channel id set in key 'channel_id'!")
     
     
-    # Attempt to connect to MQTT
-    mqtt_client.reinitialise(client_id=module_config['mqtt']['client_id'], clean_session=False)
-    mqtt_client.tls_set(tls_version=mqtt.ssl.PROTOCOL_TLS)
-    mqtt_client.on_connect = on_connect
-    mqtt_client.on_message = on_message
-    mqtt_client.enable_logger()
-    #mqtt_client.on_message = lambda x: x
-    mqtt_client.username_pw_set(module_config['mqtt']['username'], module_config['mqtt']['password'])
-    mqtt_client.connect_async(module_config['mqtt']['url'], module_config['mqtt']['port'], keepalive=60)
-
     # Init database connection
     db_con = sqlite3.connect('sensors.db')
     with db_con:
@@ -136,12 +100,6 @@ def register_module(config):
             measurement real NOT NULL,
             FOREIGN KEY (sensor)
                 REFERENCES sensors (sensor)
-        );
-        ''')
-        db_con.execute('''
-        CREATE TABLE IF NOT EXISTS mqtt_log (
-            timestamp text,
-            action text
         );
         ''')
         db_con.execute('''
@@ -209,23 +167,6 @@ def imonnit_push(message: MonnitMessage, credentials: HTTPBasicCredentials = fas
     db_con.close()
     return {'success': True}
 
-@loader.timer
-def poll_mqtt(slack_client):
-    # Check that MQTT is still alive
-    if mqtt_client._state == mqtt.mqtt_cs_connect_async:
-        try:
-            mqtt_client.reconnect()
-        except (Exception, OSError) as e:
-            module_config['logger'](f'Got exception while reconnecting to MQTT: {e}')
-    # Call the MQTT loop command once every five seconds
-    rc = mqtt_client.loop(timeout=0.1)
-    if rc != mqtt.MQTT_ERR_SUCCESS:
-        try:
-            mqtt_client.reconnect()
-        except (Exception, OSError) as e:
-            module_config['logger'](f'Got exception while reconnecting to MQTT: {e}')
-    return 5
-
 def check_status_alerts(db_con:sqlite3.Connection, perform_hometab_update:bool=True) -> dict:
     """
     Given a database connection, checks the current status, returning the status dictionary
@@ -276,12 +217,6 @@ def check_status_alerts(db_con:sqlite3.Connection, perform_hometab_update:bool=T
     cursor.close()
 
     overall_status = max([v.overall for v in status_dict.values()]) if len(status_dict) > 0 else 0
-    with db_con:
-        db_con.execute("INSERT INTO mqtt_log(timestamp, action) VALUES (?,?)",(
-            datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "send:status/current:{}".format(overall_status)
-        ))
-    mqtt_client.publish('status/current', str(overall_status))
 
     for k, v in status_dict.items():
         slack_alert(db_con, k, v)
@@ -316,8 +251,19 @@ BASE_ALERT_MESSAGE = [
     }
 ]
 
-def measurement_to_str(measurement: Measurement):
+def measurement_to_str(measurement: Measurement) -> str:
     return f'{measurement.measurement}C _(<!date^{int(measurement.timestamp.timestamp())}^{{date_short_pretty}}, {{time}}|{measurement.timestamp.isoformat()}>)_'
+
+def measurements_to_str(measurements: List[Measurement], max_n=10) -> str:
+    if len(measurements) > max_n:
+        # Elide the list
+        return '\n'.join(
+            [measurement_to_str(m) for m in measurements[:(max_n // 2)]] +
+            ['...'] +
+            [measurement_to_str(m) for m in measurements[-(max_n - (max_n // 2)):]]
+            )
+    return '\n'.join(measurement_to_str(m) for m in measurements)
+
 
 def build_alert_message(sensor_name: str, sensor_status: SensorStatus, old_status: int):
     message = copy.deepcopy(BASE_ALERT_MESSAGE)
@@ -330,7 +276,7 @@ def build_alert_message(sensor_name: str, sensor_status: SensorStatus, old_statu
             home_tab_url=module_config['home_tab_url']
         )
         message[1]['fields'][0]['text'] = message[1]['fields'][0]['text'].format(
-            readings='\n'.join([measurement_to_str(m) for m in sensor_status.measurements[1:]])
+            readings=measurements_to_str(sensor_status.measurements[1:])
         )
         message[1]['fields'][1]['text'] = message[1]['fields'][1]['text'].format(
             is_resolved='*Resolved by:*',
@@ -344,7 +290,7 @@ def build_alert_message(sensor_name: str, sensor_status: SensorStatus, old_statu
             home_tab_url=module_config['home_tab_url']
         )
         message[1]['fields'][0]['text'] = message[1]['fields'][0]['text'].format(
-            readings='\n'.join([measurement_to_str(m) for m in sensor_status.measurements])
+            readings=measurements_to_str(sensor_status.measurements)
         )
         message[1]['fields'][1]['text'] = message[1]['fields'][1]['text'].format(
             is_resolved='',
