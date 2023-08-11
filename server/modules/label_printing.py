@@ -4,6 +4,7 @@ import copy
 import csv
 import pytz
 import uuid
+import time
 
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -399,19 +400,22 @@ class DequeueRequest(BaseModel):
     token: str
 
 @loader.fastapi.post("/labels/dequeue")
-def dequeue_labels(req:DequeueRequest):
+async def dequeue_labels(req:DequeueRequest):
     if (req.token != module_config['token']):
         raise HTTPException(status_code=401, detail="Invalid auth token")
 
-    try:
-        labels = label_queue.pop(0)
-        module_config['slack_client'].views_update(
-            external_id = labels['external_id'],
-            view=build_status_view(status_text="Sent to label client...", external_id=labels['external_id'])
-        )
-        return labels
-    except IndexError:
-        return {}
+    # Long poll for 5 minutes
+    for _ in range(60 * 5 * 2):
+        try:
+            labels = label_queue.pop(0)
+            module_config['slack_client'].views_update(
+                external_id = labels['external_id'],
+                view=build_status_view(status_text="Sent to label client...", external_id=labels['external_id'])
+            )
+            return labels
+        except IndexError:
+            time.sleep(0.5)
+    return {}
 
 class StatusUpdate(BaseModel):
     token: str
