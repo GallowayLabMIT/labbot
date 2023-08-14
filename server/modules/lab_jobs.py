@@ -768,14 +768,13 @@ def lab_job_home_tab(_user):
     home_tab_blocks[1]['text']['text'] = home_tab_blocks[1]['text']['text'].format(num_jobs=n_jobs)
     block_idx = 3
     accumulated_text = '*Pending jobs*:\n'
-    # Split lab job list across different blocks
     if len(due_jobs) > 0:
         for job in due_jobs:
             accumulated_text += f'{job["name"]} (<@{job["assignee"]}>)\n'
 
             if len(accumulated_text) > 2500:
                 home_tab_blocks[block_idx]['text']['text'] = accumulated_text
-                accumulated_text = ''
+                accumulated_text = ' '
                 block_idx += 1
                 home_tab_blocks.append(
                     {
