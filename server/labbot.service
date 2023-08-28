@@ -4,10 +4,10 @@ Requires=multi-user.target
 
 [Service]
 Type=simple
-ExecStart=/home/meson800/labbot/server/env/bin/python -m labbot
-WorkingDirectory=/home/meson800/labbot/server
-User=meson800
-Group=meson800
+ExecStart=/home/labbot/labbot/server/env/bin/python -m labbot
+WorkingDirectory=/home/labbot/labbot/server
+User=labbot
+Group=labbot
 
 [Install]
 WantedBy=multi-user.target
