@@ -96,15 +96,15 @@ def poll(slack_client):
             try:
                 module_config['logger']('Order {} finished! Posting to #sequencing'.format(sequence['id']))
                 slack_response = slack_client.chat_postMessage(
-                    channel='#sequencing',
+                    channel='CSRQNRXHQ',
                     text='Sequencing results:',
                     blocks=json.dumps([{'type':'section', 'text':
                         {'type': 'mrkdwn', 'text': text_out}}]))
 
                 slack_response = slack_client.files_upload_v2(
-                        channels='#sequencing',
+                        channels='CSRQNRXHQ',
                         file=zip_filename,
-                        filename=os.path.basename(zip_filename))
+                        filename=os.path.basename(zip_filename)) #'CSRQNRXHQ' is the channel code for #sequencing
                 assert slack_response["ok"]
             finally:
                 os.remove(zip_filename)
