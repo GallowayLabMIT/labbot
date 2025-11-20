@@ -16,7 +16,7 @@ module_config = {}
 loader = ModuleLoader()
 
 def register_module(config):
-    # Override defaults if present 
+    # Override defaults if present
     module_config.update(config)
 
     if 'username' not in module_config:
@@ -50,9 +50,9 @@ def poll(slack_client):
         if token is None or pubkey is None:
             module_config['logger']('Unable to load CSRF token and password pubkey')
             return 5 * 60
-        
+
         pubkey_bytes = rsa.PublicKey.load_pkcs1_openssl_der(base64.b64decode(pubkey.group(1)))
-        
+
         encoded_pass = base64.b64encode(
                         rsa.encrypt(
                             module_config['password'].encode('utf8'),
@@ -63,7 +63,7 @@ def poll(slack_client):
                     '__RequestVerificationToken': token.group(1),
                     'LoginName': module_config['username'],
                     'Password' : encoded_pass, 'RememberMe': 'true'})
-        main_screen = session.get('https://clims4.genewiz.com/CustomerHome/Index') 
+        main_screen = session.get('https://clims4.genewiz.com/CustomerHome/Index')
 
         # Pull out the sequencing requests and oligos
         try:
@@ -85,7 +85,7 @@ def poll(slack_client):
                     pending_orders = {}
                 else:
                     pending_orders = set(json.loads(pending_json))
-        
+
         # Find orders that used to be pending:
         updated_sequences = [seq for seq in sanger_sequencing if
                 seq['orderStatus'] == 'Completed' and seq['id'] in pending_orders]
@@ -101,7 +101,7 @@ def poll(slack_client):
                     blocks=json.dumps([{'type':'section', 'text':
                         {'type': 'mrkdwn', 'text': text_out}}]))
 
-                slack_response = slack_client.files_upload(
+                slack_response = slack_client.files_upload_v2(
                         channels='#sequencing',
                         file=zip_filename,
                         filename=os.path.basename(zip_filename))
@@ -113,10 +113,10 @@ def poll(slack_client):
         # Update the pending orders list
         new_pending_orders = [order['id'] for order in (sanger_sequencing + oligos)
                 if order['orderStatus'] != 'Completed']
-        
+
         if set(new_pending_orders) != pending_orders:
             module_config['logger']('New order detected. New pending queue:{}'.format(new_pending_orders))
-        
+
         with open('pending_genewiz.json', 'w') as pending:
             json.dump(new_pending_orders, pending)
 
@@ -152,7 +152,7 @@ def _extract_seq_results(order, session):
     details = json.loads(details_model_match.group(1))
 
     reaction_list = list(details['OrdersResults'].values())[0]
-    
+
     # Extract each sequencing reaction information
     tempdir = tempfile.mkdtemp()
     ab1_files = []
@@ -209,7 +209,7 @@ def _extract_seq_results(order, session):
     table = ''
     for tup in zip(names, lengths, qualities):
         table += '\n\t{}: Length {}, quality {}'.format(*tup)
-    
+
     return (order_str + '\n' + url + table, zip_filename)
 
 def _extract_orders(html, order_type=None):
